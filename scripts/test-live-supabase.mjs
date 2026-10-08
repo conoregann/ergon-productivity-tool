@@ -76,6 +76,7 @@ try {
       p_version: snapshot.board.version,
       p_column_id: snapshot.columns[0].id,
       p_title: 'Temporary task',
+      p_priority: 'high',
     }),
     'Create task',
   )
@@ -145,13 +146,33 @@ try {
     'Verify persisted move',
   )
   assert.equal(snapshot.cards[0].column_id, snapshot.columns[1].id)
+  assert.equal(snapshot.cards[0].priority, 'high')
+  checked(
+    await alice.rpc('save_card', {
+      p_board_id: boardId,
+      p_version: snapshot.board.version,
+      p_card_id: cardId,
+      p_title: 'Temporary task',
+      p_description: '',
+      p_due_date: null,
+      p_completed: false,
+      p_archived: false,
+      p_priority: 'urgent',
+    }),
+    'Edit task priority',
+  )
+  snapshot = checked(
+    await alice.rpc('get_board_snapshot', { p_board_id: boardId }),
+    'Verify priority persistence',
+  )
+  assert.equal(snapshot.cards[0].priority, 'urgent')
   checked(await alice.auth.signOut(), 'Sign out temporary user')
   assert(
     (await alice.from('boards').select('id').eq('id', boardId)).error,
     'Signed-out access must be denied',
   )
   console.log(
-    'PASS: hosted creation, persistence, transactional movement, stale-write rejection, two-user isolation, and logout denial.',
+    'PASS: hosted creation, persistence, transactional movement, priority persistence, stale-write rejection, two-user isolation, and logout denial.',
   )
 } catch (error) {
   console.error('Live check failed:', error.message)

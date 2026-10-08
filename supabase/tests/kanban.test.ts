@@ -44,7 +44,7 @@ beforeAll(async () => {
 })
 beforeEach(async () => {
   await db.exec(
-    `reset role; set role authenticated; set request.jwt.claim.sub = '${alice}';`,
+    `reset role; insert into auth.users values ('${alice}'), ('${bob}') on conflict do nothing; set role authenticated; set request.jwt.claim.sub = '${alice}';`,
   )
   board = (await rpc('create_board', ['Work'])).rows[0]!.result as string
   columns = (
@@ -310,4 +310,63 @@ it('allows the restricted auth service to cascade account deletion', async () =>
       ])
     ).rows,
   ).toHaveLength(0)
+})
+
+it('persists priority, rejects invalid tiers atomically, and denies another user editing it', async () => {
+  const card = (
+    await rpc('create_card', [
+      board,
+      await revision(),
+      columns[0]!.id,
+      'Priority task',
+      '',
+      null,
+      'high',
+    ])
+  ).rows[0]!.result
+  const current = await revision()
+  await expect(
+    rpc('save_card', [
+      board,
+      current,
+      card,
+      'Priority task',
+      '',
+      null,
+      false,
+      false,
+      'invalid',
+    ]),
+  ).rejects.toThrow(/cards_priority_check/)
+  expect(await revision()).toBe(current)
+  await rpc('save_card', [
+    board,
+    current,
+    card,
+    'Priority task',
+    '',
+    null,
+    false,
+    false,
+    'urgent',
+  ])
+  expect(
+    (await db.query('select priority from public.cards where id = $1', [card]))
+      .rows,
+  ).toEqual([{ priority: 'urgent' }])
+  const latest = await revision()
+  await db.exec(`set request.jwt.claim.sub = '${bob}';`)
+  await expect(
+    rpc('save_card', [
+      board,
+      latest,
+      card,
+      'Forbidden',
+      '',
+      null,
+      false,
+      false,
+      'low',
+    ]),
+  ).rejects.toThrow(/Board unavailable/)
 })

@@ -75,6 +75,7 @@ export type Database = {
           due_date: string | null
           archived_at: string | null
           completed_at: string | null
+          priority: string
         }
         Insert: {
           id?: string
@@ -90,6 +91,7 @@ export type Database = {
           due_date?: string | null
           archived_at?: string | null
           completed_at?: string | null
+          priority?: string
         }
         Update: {
           id?: string
@@ -105,6 +107,7 @@ export type Database = {
           due_date?: string | null
           archived_at?: string | null
           completed_at?: string | null
+          priority?: string
         }
         Relationships: []
       }
@@ -257,6 +260,7 @@ export type Database = {
           p_title: string | null
           p_description?: string | null
           p_due_date?: string | null
+          p_priority?: string | null
         }
         Returns: string
       }
@@ -335,6 +339,7 @@ export type Database = {
           p_due_date: string | null
           p_completed: boolean | null
           p_archived: boolean | null
+          p_priority?: string | null
         }
         Returns: undefined
       }

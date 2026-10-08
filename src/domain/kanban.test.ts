@@ -29,6 +29,7 @@ const card = (
   column_id: columnId,
   position,
   description: '',
+  priority: 'none',
   due_date: null,
   completed_at: null,
   archived_at: archived ? '2026-10-08T09:00:00Z' : null,
