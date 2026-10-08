@@ -446,6 +446,10 @@ test('previews and persists board backgrounds with rollback on failed writes', a
     'data-background',
     'lavender',
   )
+  await expect(page.locator('.background-preview')).toHaveCSS(
+    'background-color',
+    'rgb(242, 239, 249)',
+  )
   await page.screenshot({
     path: testInfo.outputPath('background-settings.png'),
   })
@@ -475,6 +479,14 @@ test('previews and persists board backgrounds with rollback on failed writes', a
   await page
     .getByRole('button', { name: 'Open task Prepare proposal' })
     .scrollIntoViewIfNeeded()
+  await expect(page.locator('.board-canvas')).toHaveCSS(
+    'background-color',
+    'rgb(242, 239, 249)',
+  )
+  await expect(page.locator('.priority-high')).toHaveCSS(
+    'background-color',
+    'rgb(255, 241, 220)',
+  )
   await page.screenshot({ path: testInfo.outputPath('lavender-board.png') })
   await overview(page)
   await expect(
