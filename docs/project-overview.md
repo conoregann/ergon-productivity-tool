@@ -4,16 +4,16 @@ The application is hosted on the web, supports desktop and mobile browsers, and 
 
 ## Core Scope
 
-|Area|Capabilities|
-|---|---|
-|Authentication|GitHub OAuth, persistent sessions, logout|
-|Boards|Create, edit, archive, and delete boards|
-|Columns|Customizable workflow stages and ordering|
-|Cards|Titles, descriptions, labels, due dates, and archiving|
-|Organization|Drag-and-drop movement, search, and filtering|
-|Timetable|Daily and weekly calendar views for scheduled tasks|
-|Portability|JSON export/import and PWA installation|
-|Accessibility|Responsive layouts, keyboard controls, and alternatives to dragging|
+| Area           | Capabilities                                                        |
+| -------------- | ------------------------------------------------------------------- |
+| Authentication | GitHub OAuth, persistent sessions, logout                           |
+| Boards         | Create, edit, archive, and delete boards                            |
+| Columns        | Customizable workflow stages and ordering                           |
+| Cards          | Titles, descriptions, labels, due dates, and archiving              |
+| Organization   | Drag-and-drop movement, search, and filtering                       |
+| Timetable      | Daily and weekly calendar views for scheduled tasks                 |
+| Portability    | JSON export/import and PWA installation                             |
+| Accessibility  | Responsive layouts, keyboard controls, and alternatives to dragging |
 
 ## Timetable and Calendar
 
@@ -38,20 +38,20 @@ The first version should support daily and weekly views, visible overlap warning
 
 ## Technology Stack
 
-|Layer|Technology|Responsibility|
-|---|---|---|
-|Application|React, TypeScript, Vite|Frontend and build tooling|
-|Interface|Tailwind CSS, Lucide|Styling and icons|
-|Kanban interactions|dnd-kit|Card and column movement|
-|Calendar|Established React-compatible calendar library|Time-grid rendering and scheduling interactions|
-|Server state|TanStack Query|Fetching, caching, optimistic updates|
-|Authentication|Supabase Auth|OAuth and session management|
-|Database|Supabase PostgreSQL|Persistent application data|
-|API|Supabase PostgREST and database RPC|CRUD and transactional operations|
-|Authorization|PostgreSQL row-level security|Ownership and access enforcement|
-|Hosting|Vercel|Deployment and HTTPS delivery|
-|PWA|Web manifest, service worker|Installation and application-shell caching|
-|Testing|Vitest, Playwright|Logic, integration, and browser verification|
+| Layer               | Technology                                    | Responsibility                                  |
+| ------------------- | --------------------------------------------- | ----------------------------------------------- |
+| Application         | React, TypeScript, Vite                       | Frontend and build tooling                      |
+| Interface           | Tailwind CSS, Lucide                          | Styling and icons                               |
+| Kanban interactions | dnd-kit                                       | Card and column movement                        |
+| Calendar            | Established React-compatible calendar library | Time-grid rendering and scheduling interactions |
+| Server state        | TanStack Query                                | Fetching, caching, optimistic updates           |
+| Authentication      | Supabase Auth                                 | OAuth and session management                    |
+| Database            | Supabase PostgreSQL                           | Persistent application data                     |
+| API                 | Supabase PostgREST and database RPC           | CRUD and transactional operations               |
+| Authorization       | PostgreSQL row-level security                 | Ownership and access enforcement                |
+| Hosting             | Vercel                                        | Deployment and HTTPS delivery                   |
+| PWA                 | Web manifest, service worker                  | Installation and application-shell caching      |
+| Testing             | Vitest, Playwright                            | Logic, integration, and browser verification    |
 
 Select the calendar library during a small implementation spike, validating time-grid support, external task dragging, resizing, mobile behavior, accessibility, and licensing.
 
@@ -85,17 +85,17 @@ Use optimistic updates with rollback on failed writes. Define conflict handling 
 
 These are optional directions after the core workflow is reliable:
 
-|Feature|What It Adds|
-|---|---|
-|**Daily planning**|Select today’s priorities and arrange them around available time|
-|**Capacity planning**|Compare scheduled workload against configurable working hours|
-|**Recurring tasks**|Generate repeated tasks and sessions for routines|
-|**Focus mode**|Open a scheduled task in a distraction-free view with a timer|
-|**Estimate versus actual**|Compare planned duration with recorded work time|
-|**Dependencies**|Identify blocked cards and prerequisites|
-|**Calendar integration**|Export sessions or synchronize with external calendars|
-|**Planning suggestions**|Suggest available slots based on duration, priority, and deadlines|
-|**Board templates**|Reuse workflows and task structures|
-|**Offline editing**|Queue changes locally and reconcile them when connectivity returns|
+| Feature                    | What It Adds                                                       |
+| -------------------------- | ------------------------------------------------------------------ |
+| **Daily planning**         | Select today’s priorities and arrange them around available time   |
+| **Capacity planning**      | Compare scheduled workload against configurable working hours      |
+| **Recurring tasks**        | Generate repeated tasks and sessions for routines                  |
+| **Focus mode**             | Open a scheduled task in a distraction-free view with a timer      |
+| **Estimate versus actual** | Compare planned duration with recorded work time                   |
+| **Dependencies**           | Identify blocked cards and prerequisites                           |
+| **Calendar integration**   | Export sessions or synchronize with external calendars             |
+| **Planning suggestions**   | Suggest available slots based on duration, priority, and deadlines |
+| **Board templates**        | Reuse workflows and task structures                                |
+| **Offline editing**        | Queue changes locally and reconcile them when connectivity returns |
 
 The strongest early additions would be **daily planning, capacity indicators, and focus mode**: they connect the board to how you actually spend your time.
