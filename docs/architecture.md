@@ -26,7 +26,7 @@ Every mutable entity has a monotonically increasing `version`. Column/card write
 
 The narrowly scoped parent-revision trigger runs as a definer so Supabase Auth can cascade user deletion without application-table privileges. Its search path is empty and direct execution is revoked. Mutation RPCs remain invokers and enforce RLS, parent ownership, active-board checks, and revision checks.
 
-Drag grips support keyboard sorting. Explicit movement forms and column reorder buttons provide native-control alternatives. Archiving never deletes scheduling history. Completion is an explicit task field independent of column movement.
+Whole task cards support pointer and keyboard sorting; action buttons do not start drags. Column grips support keyboard sorting. Explicit movement forms and column reorder buttons provide native-control alternatives. Archiving never deletes scheduling history. Completion is an explicit task field independent of column movement. Task priority is a validated tier (none, low, medium, high, urgent), saved through the same revision-checked RPCs. Authentication is the opening screen; the authenticated sidebar holds the GitHub profile and sign-out, and can collapse to an icon rail.
 
 ## Current scope
 

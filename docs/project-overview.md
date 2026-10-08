@@ -4,16 +4,16 @@ The application is hosted on the web, supports desktop and mobile browsers, and 
 
 ## Core Scope
 
-| Area           | Capabilities                                                        |
-| -------------- | ------------------------------------------------------------------- |
-| Authentication | GitHub OAuth, persistent sessions, logout                           |
-| Boards         | Create, edit, archive, and delete boards                            |
-| Columns        | Customizable workflow stages and ordering                           |
-| Cards          | Titles, descriptions, labels, due dates, and archiving              |
-| Organization   | Drag-and-drop movement, search, and filtering                       |
-| Timetable      | Daily and weekly calendar views for scheduled tasks                 |
-| Portability    | JSON export/import and PWA installation                             |
-| Accessibility  | Responsive layouts, keyboard controls, and alternatives to dragging |
+| Area           | Capabilities                                                           |
+| -------------- | ---------------------------------------------------------------------- |
+| Authentication | GitHub OAuth, persistent sessions, logout                              |
+| Boards         | Create, edit, archive, and delete boards                               |
+| Columns        | Customizable workflow stages and ordering                              |
+| Cards          | Titles, descriptions, priority tiers, labels, due dates, and archiving |
+| Organization   | Drag-and-drop movement, search, and filtering                          |
+| Timetable      | Daily and weekly calendar views for scheduled tasks                    |
+| Portability    | JSON export/import and PWA installation                                |
+| Accessibility  | Responsive layouts, keyboard controls, and alternatives to dragging    |
 
 ## Timetable and Calendar
 

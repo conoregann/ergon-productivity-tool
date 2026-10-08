@@ -4,7 +4,7 @@ Applies to frontend design and UI work throughout `src/`. Inherit the root `AGEN
 
 ## Design direction
 
-Build a minimal, clear, clean workspace for managing tasks and time. Use white, off-white, and light/dark greys. Create structure through alignment, spacing, typography, and dividing lines. The interface should feel grounded and orderly, with every element serving the work.
+Build a minimal, clear, clean workspace for managing tasks and time. Use white, off-white, and light/dark greys as the base, with a restrained teal accent and colour-coded task priorities. Create structure through alignment, spacing, typography, and dividing lines. The interface should feel grounded and orderly, with every element serving the work.
 
 - Keep navigation, toolbars, board columns, cards, and calendar grids aligned to a consistent layout.
 - Use flat surfaces and thin borders. Avoid floating panels, decorative shadows, gradients, glass effects, oversized rounding, and ornamental backgrounds.
@@ -19,7 +19,7 @@ The supplied kanban references establish visual direction, not functionality or 
 
 - Reference 1: retain clear column headings, quiet counts, readable task titles, secondary metadata, and compact importance indicators. Improve alignment and reduce redundant enclosing borders and unused space.
 - Reference 2: retain the restrained sidebar, subtle surface differences, fine structural dividers, compact controls, and emphasis on the workspace. Use available screen space efficiently.
-- The colourful image previews, gradients, avatars, names, and extra navigation destinations in the references are not requirements. Add content and controls only when supported by the product scope.
+- The colourful image previews, gradients, and extra navigation destinations in the references are not requirements. GitHub profile avatars and names belong in the sidebar. Add content and controls only when supported by the product scope.
 - Aim for a more coherent hierarchy and spacing system than the references, not more decoration.
 
 ## Elements of design
@@ -57,7 +57,7 @@ The supplied kanban references establish visual direction, not functionality or 
 - Prefer clear text such as `High`, `Medium`, and `Low`, optionally paired with a simple icon or restrained semantic tint. Never communicate importance through colour alone.
 - Keep indicators subordinate to the task title. Avoid large badges, saturated fills, and competing clusters of chips.
 - Keep importance, workflow status, completion, deadlines, and scheduled time visually distinct. Do not infer importance from a due date or treat scheduling as workflow progress.
-- Do not introduce a priority field or new statuses solely to satisfy a visual reference; agree the feature scope before changing the model.
+- Task priority is an authorized feature: none, low, medium, high, and urgent. Use labelled, colour-coded badges and persist the selected tier.
 
 ## Layout and interaction
 
@@ -77,9 +77,11 @@ Inspect the implemented view at desktop and mobile sizes and with keyboard navig
 
 - The main task, current view, and next action are immediately clear.
 - Spacing, alignment, dividers, typography, and indicators follow one consistent system.
-- The palette stays neutral and surfaces remain flat and grounded.
+- Neutral surfaces stay flat and grounded; teal actions and priority colours give meaningful emphasis.
 - Text, controls, and focus indicators meet accessibility contrast requirements; colour is never the only cue.
 - Realistic long content, empty/loading/error states, and dense content remain usable.
 - No decorative chrome, unnecessary overlays, hidden essential actions, or accidental overflow has been introduced.
 
 Run the relevant checks required by the root instructions for implementation changes. For documentation-only changes, formatting and diff review are sufficient. Report what was actually verified.
+
+Cards are draggable across their whole surface; do not add a separate card grab box. Keep action buttons usable without starting a drag, and retain keyboard dragging and the movement form. Signed-out users see authentication first; authenticated profiles and sign-out live in the collapsible sidebar.

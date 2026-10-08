@@ -2,7 +2,7 @@
 
 Private kanban task management and calendar planning. Tasks and scheduled work share one data model; deadlines and reserved work time remain distinct.
 
-**Status:** authenticated kanban implemented. Boards, columns, and tasks support editing, archiving, transactional movement, keyboard/form controls, optimistic updates, and stale-edit recovery. PostgreSQL RLS and automated isolation tests protect private data. Scheduling, JSON portability, and PWA support remain later phases. Real GitHub OAuth and deployment require the verification steps in the deployment guide.
+**Status:** authenticated kanban implemented. Boards, columns, and tasks support editing, archiving, whole-card dragging, keyboard/form controls, optimistic updates, and stale-edit recovery. Tasks have persisted colour-coded priorities. Authentication opens first, with the GitHub profile and sign-out in a collapsible sidebar. PostgreSQL RLS and automated isolation tests protect private data. Scheduling, JSON portability, and PWA support remain later phases. Real GitHub OAuth and deployment require the verification steps in the deployment guide.
 
 ## Local development
 
