@@ -16,6 +16,9 @@ export default defineConfig({
       'npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
-    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '' },
+    env: {
+      VITE_SUPABASE_URL: 'https://ergon.test',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'test-publishable-key',
+    },
   },
 })
