@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { beforeAll, afterAll, describe, it, expect } from 'vitest'
 
@@ -23,15 +23,13 @@ beforeAll(async () => {
     grant execute on function auth.uid() to authenticated, anon;
     insert into auth.users values ('${alice}'), ('${bob}');
   `)
-  await db.exec(
-    await readFile(
-      new URL(
-        '../migrations/20261008000100_initial_schema.sql',
-        import.meta.url,
-      ),
-      'utf8',
-    ),
-  )
+  for (const name of (await readdir(new URL('../migrations/', import.meta.url)))
+    .filter((name) => name.endsWith('.sql'))
+    .sort()) {
+    await db.exec(
+      await readFile(new URL('../migrations/' + name, import.meta.url), 'utf8'),
+    )
+  }
   await db.exec(`
     set role authenticated;
     set request.jwt.claim.sub = '${alice}';
@@ -115,7 +113,9 @@ describe('ownership', () => {
       `insert into public.scheduled_sessions (card_id, starts_at, ends_at) values ('${card}', now(), now() + interval '1 hour')`,
     ]
     for (const sql of statements)
-      await expect(db.query(sql)).rejects.toThrow(/foreign key/)
+      await expect(db.query(sql)).rejects.toThrow(
+        /foreign key|Active board unavailable/,
+      )
   })
 
   it('rejects cross-board cards and labels even for the same owner', async () => {
@@ -127,7 +127,7 @@ describe('ownership', () => {
       db.query(
         `insert into public.cards (board_id, column_id, title, position) values ('10000000-0000-0000-0000-000000000002', '${column}', 'Wrong board', 1)`,
       ),
-    ).rejects.toThrow(/foreign key/)
+    ).rejects.toThrow(/foreign key|Active board unavailable/)
     await db.exec(
       `insert into public.labels (id, board_id, name) values ('40000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'Other');`,
     )
@@ -135,7 +135,7 @@ describe('ownership', () => {
       db.query(
         `insert into public.card_labels (board_id, card_id, label_id) values ('${board}', '${card}', '40000000-0000-0000-0000-000000000002')`,
       ),
-    ).rejects.toThrow(/foreign key/)
+    ).rejects.toThrow(/foreign key|Active board unavailable/)
   })
 })
 
