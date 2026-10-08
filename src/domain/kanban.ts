@@ -7,7 +7,12 @@ export type Card = Tables['cards']['Row']
 export type BoardSnapshot = { board: Board; columns: Column[]; cards: Card[] }
 export type CardFields = Pick<
   Card,
-  'title' | 'description' | 'due_date' | 'completed_at' | 'archived_at'
+  | 'title'
+  | 'description'
+  | 'due_date'
+  | 'completed_at'
+  | 'archived_at'
+  | 'priority'
 >
 export type Command =
   | { kind: 'saveBoard'; title: string; archived: boolean }

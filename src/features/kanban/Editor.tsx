@@ -35,6 +35,9 @@ export function Editor({
   const [description, setDescription] = useState(
     editor.kind === 'card' ? (editor.card?.description ?? '') : '',
   )
+  const [priority, setPriority] = useState(
+    editor.kind === 'card' ? (editor.card?.priority ?? 'none') : 'none',
+  )
   const [deadline, setDeadline] = useState(
     editor.kind === 'card' ? (editor.card?.due_date ?? '') : '',
   )
@@ -95,6 +98,7 @@ export function Editor({
     const fields = {
       title: title.trim(),
       description,
+      priority,
       due_date: deadline || null,
       completed_at: completed
         ? (editor.card?.completed_at ?? new Date().toISOString())
@@ -177,6 +181,20 @@ export function Editor({
                   onChange={(event) => setDescription(event.target.value)}
                 />
               </label>
+              <div className="form-field">
+                <label htmlFor="card-priority">Priority</label>
+                <select
+                  id="card-priority"
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value)}
+                >
+                  <option value="none">No priority</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
               <label>
                 Due date
                 <input

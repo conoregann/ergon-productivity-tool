@@ -241,7 +241,7 @@ export function Kanban({
           },
           screenReaderInstructions: {
             draggable:
-              'Press Space to pick up an item, arrow keys to move, Space to drop, or Escape to cancel. You can also use the Move task form or column order buttons.',
+              'Focus a card and press Space to pick it up, arrow keys to move, Space to drop, or Escape to cancel. You can also use the Move task form or column order buttons.',
           },
         }}
       >

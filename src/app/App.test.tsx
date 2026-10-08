@@ -40,7 +40,15 @@ it('keeps example content separate from the authenticated workspace', () => {
     <QueryClientProvider client={cache}>
       <AuthContext.Provider
         value={{
-          session: { user: { id: 'alice' } } as Session,
+          session: {
+            user: {
+              id: 'alice',
+              user_metadata: {
+                user_name: 'Alice',
+                avatar_url: 'https://example.com/avatar.png',
+              },
+            },
+          } as unknown as Session,
           status: 'ready',
           error: null,
           signIn: async () => {},
@@ -56,4 +64,9 @@ it('keeps example content separate from the authenticated workspace', () => {
     screen.queryByRole('heading', { name: 'Example board' }),
   ).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  expect(screen.getByRole('img', { name: 'GitHub profile' })).toHaveAttribute(
+    'src',
+    'https://example.com/avatar.png',
+  )
+  expect(screen.queryByText(/A clear view/)).not.toBeInTheDocument()
 })

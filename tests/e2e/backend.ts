@@ -146,6 +146,7 @@ export async function installBackend(page: Page) {
         column_id: columnId,
         title: String(args.p_title),
         description: String(args.p_description ?? ''),
+        priority: String(args.p_priority ?? 'none'),
         due_date: args.p_due_date as string | null,
         archived_at: null,
         completed_at: null,
@@ -157,6 +158,7 @@ export async function installBackend(page: Page) {
       Object.assign(card, {
         title: args.p_title,
         description: args.p_description,
+        priority: args.p_priority ?? card.priority,
         due_date: args.p_due_date,
         archived_at: args.p_archived ? new Date().toISOString() : null,
         completed_at: args.p_completed ? new Date().toISOString() : null,

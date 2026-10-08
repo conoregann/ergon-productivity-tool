@@ -1,60 +1,119 @@
-import { Columns3, LockKeyhole } from 'lucide-react'
+import { useState } from 'react'
+import { Columns3, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { GitHubIcon } from '../features/auth/GitHubIcon'
 import { AuthGate } from '../features/auth/AuthGate'
 import { useAuth } from '../features/auth/auth-context'
 import { Boards } from '../features/boards/Boards'
-import { WorkspacePreview } from './WorkspacePreview'
 
 export function App() {
-  const { session, status } = useAuth()
+  const { session, signOut } = useAuth()
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth < 760)
+  const [boardView, setBoardView] = useState(0)
+  const [pending, setPending] = useState(false)
+  const metadata = session?.user.user_metadata
+  const name =
+    metadata?.full_name ??
+    metadata?.user_name ??
+    session?.user.email ??
+    'GitHub account'
+  const avatar =
+    typeof metadata?.avatar_url === 'string' ? metadata.avatar_url : null
+  async function logout() {
+    setPending(true)
+    try {
+      await signOut()
+    } finally {
+      setPending(false)
+    }
+  }
   return (
-    <div className="app-layout">
-      <a className="skip-link" href="#workspace">
-        Skip to workspace
-      </a>
-      <aside className="sidebar" aria-label="Workspace navigation">
-        <a className="brand" href="#workspace" aria-label="Ergon workspace">
-          <span className="brand-mark" aria-hidden="true">
-            e
-          </span>
-          <span>
-            ergon<span className="brand-caption">Tasks & time</span>
-          </span>
+    <AuthGate>
+      <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
+        <a className="skip-link" href="#workspace">
+          Skip to workspace
         </a>
-        <nav aria-label="Main navigation">
-          <p className="nav-label">Workspace</p>
-          <a className="nav-item" href="#workspace" aria-current="page">
-            <Columns3 aria-hidden="true" /> Boards
+        <aside
+          id="sidebar"
+          className="sidebar"
+          aria-label="Workspace navigation"
+        >
+          <a
+            className="brand"
+            href="#workspace"
+            aria-label="Ergon workspace"
+            onClick={() => setBoardView((view) => view + 1)}
+          >
+            <span className="brand-mark" aria-hidden="true">
+              e
+            </span>
+            <span className="sidebar-label">ergon</span>
           </a>
-        </nav>
-        <div className="sidebar-footer">
-          <LockKeyhole aria-hidden="true" />
-          <span>Private by design</span>
-        </div>
-      </aside>
-      <main id="workspace" className="workspace" tabIndex={-1}>
-        <header className="workspace-header">
-          <p className="breadcrumb">
-            Workspace <span aria-hidden="true">/</span> <span>Boards</span>
-          </p>
-          <div className="page-heading">
-            <div>
-              <h1>Boards</h1>
-              <p>A clear view of the work ahead.</p>
+          <nav aria-label="Main navigation">
+            <p className="nav-label sidebar-label">Workspace</p>
+            <a
+              className="nav-item"
+              href="#workspace"
+              aria-current="page"
+              aria-label="Boards"
+              onClick={() => setBoardView((view) => view + 1)}
+            >
+              <Columns3 aria-hidden="true" />{' '}
+              <span className="sidebar-label">Boards</span>
+            </a>
+          </nav>
+          <div className="sidebar-account">
+            <div className="profile" title={String(name)}>
+              {avatar ? (
+                <img
+                  className="profile-avatar"
+                  src={avatar}
+                  alt="GitHub profile"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="profile-avatar">
+                  <GitHubIcon aria-hidden="true" />
+                </span>
+              )}
+              <div className="sidebar-label profile-copy">
+                <strong>{String(name)}</strong>
+                <span>Personal workspace</span>
+              </div>
             </div>
-            <Columns3 className="heading-icon" aria-hidden="true" />
+            <button
+              className="signout-button"
+              disabled={pending}
+              onClick={() => void logout()}
+              aria-label="Sign out"
+            >
+              <LogOut aria-hidden="true" />
+              <span className="sidebar-label">Sign out</span>
+            </button>
           </div>
-        </header>
-        <div className="workspace-content">
-          <AuthGate>
-            <Boards />
-          </AuthGate>
-          {!session && status !== 'loading' && <WorkspacePreview />}
-        </div>
-        <footer className="workspace-footer">
-          <span>Less noise. More focus.</span>
-          <span>Tasks & time</span>
-        </footer>
-      </main>
-    </div>
+        </aside>
+        <main id="workspace" className="workspace" tabIndex={-1}>
+          <header className="workspace-header">
+            <button
+              className="icon-button sidebar-toggle"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-expanded={!collapsed}
+              aria-controls="sidebar"
+            >
+              {collapsed ? (
+                <PanelLeftOpen aria-hidden="true" />
+              ) : (
+                <PanelLeftClose aria-hidden="true" />
+              )}
+            </button>
+            <h1>Boards</h1>
+            <span className="workspace-context">Personal workspace</span>
+          </header>
+          <div className="workspace-content">
+            <Boards key={boardView} />
+          </div>
+        </main>
+      </div>
+    </AuthGate>
   )
 }

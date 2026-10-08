@@ -13,6 +13,7 @@ async function createWorkspace(page: import('@playwright/test').Page) {
     .click()
   await page.getByLabel('Title', { exact: true }).fill('Prepare proposal')
   await page.getByLabel('Description').fill('Scope, timing, and deliverables')
+  await page.getByLabel('Priority', { exact: true }).selectOption('high')
   await page.getByLabel('Due date').fill('2026-10-09')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(
@@ -49,6 +50,7 @@ test('creates, edits, moves, archives and restores tasks with keyboard-friendly 
   await page
     .getByRole('button', { name: 'Edit Prepare proposal', exact: true })
     .click()
+  await page.getByLabel('Priority', { exact: true }).selectOption('urgent')
   await page.getByLabel('Completed', { exact: true }).check()
   await page.getByLabel('Archived', { exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
@@ -62,6 +64,11 @@ test('creates, edits, moves, archives and restores tasks with keyboard-friendly 
   await page.getByLabel('Archived', { exact: true }).uncheck()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByText('Completed', { exact: true })).toBeVisible()
+  await expect(
+    page
+      .getByRole('button', { name: 'Drag task Prepare proposal' })
+      .getByText('Urgent', { exact: true }),
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Add column', exact: true }).click()
   await page.getByLabel('Title', { exact: true }).fill('Review')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
@@ -145,13 +152,14 @@ test('rolls back failed optimistic movement and retains failed/conflicting draft
   ).toBeVisible()
 })
 
-test('moves a task with its keyboard drag grip', async ({ page }, testInfo) => {
+test('moves a task using keyboard dragging', async ({ page }, testInfo) => {
   await installBackend(page)
   await createWorkspace(page)
   await page
     .getByRole('button', { name: 'Add task to To do', exact: true })
     .click()
   await page.getByLabel('Title', { exact: true }).fill('Second task')
+  await page.getByLabel('Priority', { exact: true }).selectOption('medium')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   const grip = page.getByRole('button', { name: 'Drag task Prepare proposal' })
   await expect(grip).toBeEnabled()
@@ -174,11 +182,76 @@ test('moves a task with its keyboard drag grip', async ({ page }, testInfo) => {
     'transform',
     'none',
   )
-  await page
-    .getByRole('heading', { name: 'Boards', exact: true })
-    .scrollIntoViewIfNeeded()
+  for (const item of await page.getByRole('listitem').all()) {
+    await expect(item).toHaveCSS('transform', 'none')
+  }
+  await page.getByRole('button', { name: /sidebar/ }).focus()
   await page.screenshot({
     path: testInfo.outputPath('kanban.png'),
     fullPage: true,
   })
+})
+
+test('toggles the sidebar, navigates boards, and drags the card surface on desktop', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  const toggle = page.getByRole('button', { name: /sidebar/ })
+  const expanded = await toggle.getAttribute('aria-expanded')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute(
+    'aria-expanded',
+    expanded === 'true' ? 'false' : 'true',
+  )
+  await expect(
+    page.getByRole('heading', { name: 'Personal projects' }),
+  ).toBeVisible()
+  await toggle.click()
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  if (testInfo.project.name !== 'mobile') {
+    const card = page.getByRole('button', {
+      name: 'Drag task Prepare proposal',
+    })
+    await expect(card).toHaveAttribute('aria-disabled', 'false')
+    const source = await page
+      .getByRole('heading', { name: 'Prepare proposal' })
+      .boundingBox()
+    const target = await page
+      .getByRole('region', { name: 'In progress', exact: true })
+      .locator('.column-dropzone')
+      .boundingBox()
+    if (!source || !target)
+      throw new Error('Drag source or destination unavailable')
+    await page.mouse.move(source.x + 12, source.y + source.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(source.x + 25, source.y + source.height / 2, {
+      steps: 3,
+    })
+    await expect(card).toHaveAttribute('aria-pressed', 'true')
+    await page.mouse.move(
+      target.x + target.width / 2,
+      target.y + target.height / 2,
+      { steps: 12 },
+    )
+    await expect(page.getByRole('status')).toContainText('In progress')
+    await page.mouse.up()
+    await expect(
+      page
+        .getByRole('region', { name: 'In progress', exact: true })
+        .getByRole('heading', { name: 'Prepare proposal' }),
+    ).toBeVisible()
+    await expect(card).toHaveAttribute('aria-disabled', 'false')
+    await expect(page.getByText('High', { exact: true })).toBeVisible()
+  }
+  await page.getByRole('link', { name: 'Boards', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Personal projects', exact: true }),
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Personal projects', exact: true })
+    .click()
+  await expect(
+    page.getByRole('heading', { name: 'Prepare proposal' }),
+  ).toBeVisible()
 })

@@ -62,40 +62,49 @@ function TaskCard({
   return (
     <li
       ref={setNodeRef}
+      {...listeners}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`task-card live-task ${isDragging ? 'is-dragging' : ''}`}
     >
-      <div className="task-heading">
-        <h4>{card.title}</h4>
-        <button
-          ref={setActivatorNodeRef}
-          className="icon-button drag-handle"
-          disabled={disabled}
-          {...attributes}
-          {...listeners}
-          aria-label={`Drag task ${card.title}`}
-        >
-          <GripVertical aria-hidden="true" />
-        </button>
-      </div>
-      {card.description && (
-        <p className="task-description">{card.description}</p>
-      )}
-      <div className="task-meta">
-        {card.completed_at && (
-          <span className="quiet-badge">
-            <Check aria-hidden="true" />
-            Completed
-          </span>
+      <div
+        ref={setActivatorNodeRef}
+        {...attributes}
+        className="card-content"
+        aria-label={`Drag task ${card.title}`}
+      >
+        <div className="task-heading">
+          <h4>{card.title}</h4>
+          {card.priority !== 'none' && (
+            <span className={`priority priority-${card.priority}`}>
+              <span aria-hidden="true" className="priority-dot" />
+              {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
+            </span>
+          )}
+        </div>
+        {card.description && (
+          <p className="task-description">{card.description}</p>
         )}
-        {card.due_date && (
-          <span className="deadline">
-            <CalendarDays aria-hidden="true" />
-            <time dateTime={card.due_date}>Due {card.due_date}</time>
-          </span>
-        )}
+        <div className="task-meta">
+          {card.completed_at && (
+            <span className="quiet-badge">
+              <Check aria-hidden="true" />
+              Completed
+            </span>
+          )}
+          {card.due_date && (
+            <span className="deadline">
+              <CalendarDays aria-hidden="true" />
+              <time dateTime={card.due_date}>Due {card.due_date}</time>
+            </span>
+          )}
+        </div>
       </div>
-      <div className="task-actions">
+      <div
+        className="task-actions"
+        onMouseDown={(event) => event.stopPropagation()}
+        onTouchStart={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
         <button className="text-button" disabled={disabled} onClick={onEdit}>
           Edit<span className="sr-only"> {card.title}</span>
         </button>

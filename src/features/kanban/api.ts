@@ -72,6 +72,7 @@ export async function executeCommand(
         p_title: command.fields.title,
         p_description: command.fields.description,
         p_due_date: command.fields.due_date,
+        p_priority: command.fields.priority,
       })
     case 'saveCard':
       return rpc('save_card', {
@@ -80,6 +81,7 @@ export async function executeCommand(
         p_title: command.fields.title,
         p_description: command.fields.description,
         p_due_date: command.fields.due_date,
+        p_priority: command.fields.priority,
         p_completed: Boolean(command.fields.completed_at),
         p_archived: Boolean(command.fields.archived_at),
       })

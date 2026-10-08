@@ -1,60 +1,68 @@
-import { LogIn } from 'lucide-react'
+import { GitHubIcon } from './GitHubIcon'
 import { useState } from 'react'
 import type { PropsWithChildren } from 'react'
 import { useAuth } from './auth-context'
 
 export function AuthGate({ children }: PropsWithChildren) {
-  const { session, status, error, signIn, signOut } = useAuth()
+  const { session, status, error, signIn } = useAuth()
   const [pending, setPending] = useState(false)
-  async function run(action: () => Promise<void>) {
+  async function login() {
     setPending(true)
     try {
-      await action()
+      await signIn()
     } finally {
       setPending(false)
     }
   }
-  if (status === 'unconfigured')
+  if (session)
     return (
-      <section className="panel">
-        <h2>Welcome to Ergon</h2>
-        <p>The workspace is awaiting configuration. Please check back soon.</p>
-      </section>
+      <>
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+        {children}
+      </>
     )
-  if (status === 'loading') return <p role="status">Restoring your session…</p>
   return (
-    <>
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-      {session ? (
-        <>
-          <div className="account">
-            <p>Signed in as {session.user.email ?? 'GitHub user'}</p>
+    <main className="auth-screen">
+      <a className="brand auth-brand" href="/" aria-label="Ergon">
+        <span className="brand-mark" aria-hidden="true">
+          e
+        </span>
+        ergon
+      </a>
+      <section className="auth-entry" aria-labelledby="welcome-heading">
+        <h1 id="welcome-heading">Welcome to Ergon</h1>
+        {status === 'unconfigured' ? (
+          <p>
+            The workspace is awaiting configuration. Please check back soon.
+          </p>
+        ) : status === 'loading' ? (
+          <p role="status">Restoring your session…</p>
+        ) : (
+          <>
+            <p>Sign up or sign in with your GitHub account.</p>
             <button
-              className="button-secondary"
+              className="github-login"
               disabled={pending}
-              onClick={() => void run(signOut)}
+              onClick={() => void login()}
             >
-              Sign out
+              <GitHubIcon aria-hidden="true" />
+              {pending ? 'Connecting…' : 'Sign up with GitHub'}
             </button>
-          </div>
-          {children}
-        </>
-      ) : (
-        <section className="panel auth-panel">
-          <div className="auth-copy">
-            <h2>Your private workspace</h2>
-            <p>Sign in to access your boards across devices.</p>
-          </div>
-          <button disabled={pending} onClick={() => void run(signIn)}>
-            <LogIn aria-hidden="true" />
-            {pending ? 'Connecting…' : 'Continue with GitHub'}
-          </button>
-        </section>
-      )}
-    </>
+            <p className="auth-note">
+              Already have an account? This signs you in too.
+            </p>
+          </>
+        )}
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+      </section>
+    </main>
   )
 }
