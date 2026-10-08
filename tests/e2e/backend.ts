@@ -78,7 +78,13 @@ export async function installBackend(page: Page) {
     if (name === 'create_board') {
       const id = crypto.randomUUID()
       boards.set(id, {
-        board: { ...base, id, title: String(args.p_title), archived_at: null },
+        board: {
+          ...base,
+          id,
+          title: String(args.p_title),
+          archived_at: null,
+          background: 'neutral',
+        },
         columns: ['To do', 'In progress', 'Done'].map((title, position) => ({
           ...base,
           id: crypto.randomUUID(),
@@ -184,6 +190,7 @@ export async function installBackend(page: Page) {
     if (name === 'save_board')
       Object.assign(snapshot.board, {
         title: args.p_title,
+        background: args.p_background ?? snapshot.board.background,
         archived_at: args.p_archived ? new Date().toISOString() : null,
       })
     if (name === 'delete_board') boards.delete(snapshot.board.id)

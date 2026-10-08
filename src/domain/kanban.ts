@@ -15,7 +15,7 @@ export type CardFields = Pick<
   | 'priority'
 >
 export type Command =
-  | { kind: 'saveBoard'; title: string; archived: boolean }
+  | { kind: 'saveBoard'; title: string; archived: boolean; background?: string }
   | { kind: 'deleteBoard' }
   | { kind: 'createColumn'; id: string; title: string }
   | { kind: 'saveColumn'; id: string; title: string }
@@ -61,6 +61,7 @@ export function applyCommand(
         board: {
           ...board,
           title: command.title,
+          background: command.background ?? board.background,
           archived_at: command.archived ? new Date().toISOString() : null,
         },
       }

@@ -46,6 +46,7 @@ export async function executeCommand(
         ...args,
         p_title: command.title,
         p_archived: command.archived,
+        p_background: command.background ?? null,
       })
     case 'deleteBoard':
       return rpc('delete_board', args)

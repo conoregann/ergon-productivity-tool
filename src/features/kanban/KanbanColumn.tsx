@@ -24,13 +24,50 @@ type Props = {
   onAdd: () => void
   onEditCard: (card: Card) => void
   onRename: (title: string) => Promise<void>
+  dropTarget: string | null
+  dragging: boolean
+}
+
+export function CardContent({ card }: { card: Card }) {
+  return (
+    <>
+      <div className="task-heading">
+        <h4>{card.title}</h4>
+        {card.priority !== 'none' && (
+          <span className={`priority priority-${card.priority}`}>
+            <span aria-hidden="true" className="priority-dot" />
+            {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
+          </span>
+        )}
+      </div>
+      {card.description && (
+        <p className="task-description">{card.description}</p>
+      )}
+      <div className="task-meta">
+        {card.completed_at && (
+          <span className="quiet-badge">
+            <Check aria-hidden="true" />
+            Completed
+          </span>
+        )}
+        {card.due_date && (
+          <span className="deadline">
+            <CalendarDays aria-hidden="true" />
+            <time dateTime={card.due_date}>Due {card.due_date}</time>
+          </span>
+        )}
+      </div>
+    </>
+  )
 }
 
 function TaskCard({
   card,
   disabled,
   onEdit,
+  dropTarget,
 }: {
+  dropTarget: boolean
   card: Card
   disabled: boolean
   onEdit: () => void
@@ -46,6 +83,7 @@ function TaskCard({
   } = useSortable({
     id: 'card:' + card.id,
     disabled,
+    transition: { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
     data: {
       kind: 'card',
       cardId: card.id,
@@ -72,8 +110,11 @@ function TaskCard({
       onClick={() => {
         if (!disabled && !dragged.current) onEdit()
       }}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`task-card ${isDragging ? 'is-dragging' : ''}`}
+      style={{
+        transform: isDragging ? undefined : CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`task-card ${isDragging ? 'drag-source' : ''} ${dropTarget ? 'card-drop-target' : ''}`}
     >
       <div
         ref={setActivatorNodeRef}
@@ -87,32 +128,7 @@ function TaskCard({
           }
         }}
       >
-        <div className="task-heading">
-          <h4>{card.title}</h4>
-          {card.priority !== 'none' && (
-            <span className={`priority priority-${card.priority}`}>
-              <span aria-hidden="true" className="priority-dot" />
-              {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
-            </span>
-          )}
-        </div>
-        {card.description && (
-          <p className="task-description">{card.description}</p>
-        )}
-        <div className="task-meta">
-          {card.completed_at && (
-            <span className="quiet-badge">
-              <Check aria-hidden="true" />
-              Completed
-            </span>
-          )}
-          {card.due_date && (
-            <span className="deadline">
-              <CalendarDays aria-hidden="true" />
-              <time dateTime={card.due_date}>Due {card.due_date}</time>
-            </span>
-          )}
-        </div>
+        <CardContent card={card} />
       </div>
     </li>
   )
@@ -126,6 +142,8 @@ export function KanbanColumn({
   onAdd,
   onEditCard,
   onRename,
+  dropTarget,
+  dragging,
 }: Props) {
   const {
     setNodeRef,
@@ -192,7 +210,7 @@ export function KanbanColumn({
       </header>
       <div
         ref={setDropRef}
-        className={`column-dropzone ${isOver ? 'drop-target' : ''}`}
+        className={`column-dropzone ${dragging && (isOver || dropTarget === 'drop:' + column.id) ? 'drop-target' : ''}`}
       >
         <SortableContext
           items={cards.map((card) => 'card:' + card.id)}
@@ -204,6 +222,7 @@ export function KanbanColumn({
                 key={card.id}
                 card={card}
                 disabled={disabled}
+                dropTarget={dropTarget === 'card:' + card.id}
                 onEdit={() => onEditCard(card)}
               />
             ))}

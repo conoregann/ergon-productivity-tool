@@ -8,7 +8,13 @@ const base = {
   created_at: '2026-10-08T09:00:00Z',
   updated_at: '2026-10-08T09:00:00Z',
 }
-const board = { ...base, id: 'board', title: 'Work', archived_at: null }
+const board = {
+  ...base,
+  id: 'board',
+  title: 'Work',
+  archived_at: null,
+  background: 'neutral',
+}
 const columns = ['todo', 'doing', 'done'].map((id, position) => ({
   ...base,
   id,

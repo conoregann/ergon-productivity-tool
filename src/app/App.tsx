@@ -94,34 +94,33 @@ function Workspace() {
           <span className="sidebar-label">ergon</span>
         </button>
         <nav aria-label="Main navigation">
-          <button
-            className="nav-item"
-            aria-label="Boards"
-            aria-expanded={boardsOpen && !collapsed}
-            aria-controls="sidebar-boards"
-            onClick={() => {
-              if (collapsed) {
-                setCollapsed(false)
-                setBoardsOpen(true)
-              } else setBoardsOpen(!boardsOpen)
-            }}
-          >
-            <Columns3 aria-hidden="true" />
-            <span className="sidebar-label">Boards</span>
-            <ChevronDown
-              className={`sidebar-label nav-chevron ${boardsOpen ? 'is-open' : ''}`}
-              aria-hidden="true"
-            />
-          </button>
+          <div className="boards-navigation">
+            <button
+              className="nav-item"
+              aria-label="Boards"
+              aria-current={!selected && !archived ? 'page' : undefined}
+              onClick={() => overview()}
+            >
+              <Columns3 aria-hidden="true" />
+              <span className="sidebar-label">Boards</span>
+            </button>
+            {!collapsed && (
+              <button
+                className="icon-button boards-disclosure"
+                aria-label={boardsOpen ? 'Hide board list' : 'Show board list'}
+                aria-expanded={boardsOpen}
+                aria-controls="sidebar-boards"
+                onClick={() => setBoardsOpen(!boardsOpen)}
+              >
+                <ChevronDown
+                  className={`nav-chevron ${boardsOpen ? 'is-open' : ''}`}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+          </div>
           {boardsOpen && !collapsed && (
             <div id="sidebar-boards" className="sidebar-boards">
-              <button
-                className="sidebar-board"
-                aria-current={!selected && !archived ? 'page' : undefined}
-                onClick={() => overview()}
-              >
-                Overview
-              </button>
               {boards
                 .filter((board) => !board.archived_at)
                 .map((board) => (

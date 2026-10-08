@@ -24,7 +24,11 @@ function BoardTile({
       aria-label={`Open board ${board.title}`}
       onClick={() => onSelect(board.id)}
     >
-      <span className="board-miniature" aria-hidden="true">
+      <span
+        className="board-miniature"
+        data-background={board.background}
+        aria-hidden="true"
+      >
         {data?.columns.slice(0, 3).map((column) => (
           <span className="mini-column" key={column.id}>
             <span>{column.title}</span>

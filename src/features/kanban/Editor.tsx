@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '../../app/Dialog'
+import { DatePicker } from './DatePicker'
+import { boardBackgrounds } from './appearance'
 import type { BoardSnapshot, Card, Column, Command } from '../../domain/kanban'
 
 export type EditorState =
@@ -38,6 +40,9 @@ export function Editor({
         : editor.kind === 'board'
           ? snapshot.board
           : editor.card
+  const [background, setBackground] = useState(
+    snapshot.board.background ?? 'neutral',
+  )
   const [title, setTitle] = useState(subject?.title ?? '')
   const [description, setDescription] = useState(
     editor.kind === 'card' ? (editor.card?.description ?? '') : '',
@@ -84,7 +89,12 @@ export function Editor({
   }
   function save() {
     if (editor.kind === 'board')
-      return submit({ kind: 'saveBoard', title: title.trim(), archived })
+      return submit({
+        kind: 'saveBoard',
+        title: title.trim(),
+        archived,
+        background,
+      })
     if (editor.kind === 'column')
       return submit(
         editor.column
@@ -215,6 +225,42 @@ export function Editor({
               />
             </label>
           )}
+          {editor.kind === 'board' && (
+            <div
+              className="background-picker"
+              role="group"
+              aria-label="Board background"
+            >
+              <span>Background</span>
+              <div className="background-swatches">
+                {boardBackgrounds.map(({ value, label }) => (
+                  <button
+                    type="button"
+                    key={value}
+                    className="background-swatch"
+                    data-background={value}
+                    aria-label={`${label} background`}
+                    aria-pressed={background === value}
+                    onClick={() => setBackground(value)}
+                  >
+                    <span aria-hidden="true">
+                      {background === value ? '✓' : ''}
+                    </span>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+              <div
+                className="background-preview"
+                data-background={background}
+                aria-hidden="true"
+              >
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+          )}
           {editor.kind === 'card' && (
             <>
               <label>
@@ -240,15 +286,7 @@ export function Editor({
                   <option value="urgent">Urgent</option>
                 </select>
               </div>
-              <label>
-                Due date
-                <input
-                  name="due_date"
-                  type="date"
-                  value={deadline}
-                  onChange={(event) => setDeadline(event.target.value)}
-                />
-              </label>
+              <DatePicker value={deadline} onChange={setDeadline} />
               {editor.card && (
                 <label className="checkbox-label">
                   <input

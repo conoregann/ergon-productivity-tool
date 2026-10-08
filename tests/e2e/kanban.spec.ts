@@ -19,7 +19,7 @@ async function createWorkspace(page: Page) {
   await page.getByLabel('Title', { exact: true }).fill('Prepare proposal')
   await page.getByLabel('Description').fill('Scope, timing, and deliverables')
   await page.getByLabel('Priority', { exact: true }).selectOption('high')
-  await page.getByLabel('Due date').fill('2026-10-09')
+  await page.getByLabel('Due date', { exact: true }).fill('2026-10-09')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(
@@ -36,10 +36,7 @@ async function openPlacement(page: Page) {
 async function overview(page: Page) {
   if (await page.getByRole('button', { name: 'Expand sidebar' }).isVisible())
     await page.getByRole('button', { name: 'Expand sidebar' }).click()
-  const boards = page.getByRole('button', { name: 'Boards', exact: true })
-  if ((await boards.getAttribute('aria-expanded')) === 'false')
-    await boards.click()
-  await page.getByRole('button', { name: 'Overview', exact: true }).click()
+  await page.getByRole('button', { name: 'Boards', exact: true }).click()
 }
 async function boardSettings(page: Page) {
   await page.getByLabel('Board options', { exact: true }).click()
@@ -333,11 +330,15 @@ test('toggles sidebar board navigation and drags the card surface on desktop', a
       steps: 3,
     })
     await expect(card).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('.drag-preview')).toBeVisible()
     await page.mouse.move(target.x + target.width / 2, target.y + 80, {
       steps: 12,
     })
     await expect(page.getByRole('status')).toContainText('In progress')
+    await expect(page.locator('.drop-target')).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath('drag-preview.png') })
     await page.mouse.up()
+    await expect(page.locator('.drag-preview')).toHaveCount(0)
     await expect(
       page
         .getByRole('region', { name: 'In progress', exact: true })
@@ -385,4 +386,165 @@ test('reorders columns with the keyboard and honours reduced motion', async ({
       .locator('.app-layout')
       .evaluate((el) => getComputedStyle(el).transitionDuration),
   ).toBe('0s')
+})
+
+test('scrolls horizontally over every column and keeps vertical scrolling local', async ({
+  page,
+}) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  const grid = page.getByRole('group', { name: 'Board columns' })
+  const columns = page.locator('.column-dropzone')
+  for (let index = 0; index < 3; index++) {
+    await grid.evaluate((el) => {
+      el.style.scrollBehavior = 'auto'
+      el.style.scrollSnapType = 'none'
+      el.scrollLeft = 0
+    })
+    await columns.nth(index).scrollIntoViewIfNeeded()
+    const before = await grid.evaluate((el) => el.scrollLeft)
+    const bounds = await grid.boundingBox()
+    const column = await columns.nth(index).boundingBox()
+    if (!bounds || !column) throw new Error('Column unavailable')
+    const x = Math.min(
+      bounds.x + bounds.width - 12,
+      Math.max(bounds.x + 12, column.x + 40),
+    )
+    await page.mouse.move(x, column.y + 80)
+    await page.mouse.wheel(150, 0)
+    await expect
+      .poll(() => grid.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(before)
+  }
+  await grid.evaluate((el) => {
+    el.scrollLeft = 0
+  })
+  const zone = columns.first()
+  await zone.evaluate((el) => {
+    const filler = document.createElement('div')
+    filler.style.height = '2000px'
+    el.append(filler)
+  })
+  const box = await zone.boundingBox()
+  if (!box) throw new Error('Column unavailable')
+  await page.mouse.move(box.x + 40, box.y + 80)
+  await page.mouse.wheel(0, 200)
+  await expect
+    .poll(() => zone.evaluate((el) => el.scrollTop))
+    .toBeGreaterThan(0)
+  expect(await grid.evaluate((el) => el.scrollLeft)).toBe(0)
+})
+
+test('previews and persists board backgrounds with rollback on failed writes', async ({
+  page,
+}, testInfo) => {
+  const backend = await installBackend(page)
+  await createWorkspace(page)
+  await boardSettings(page)
+  await page.getByRole('button', { name: 'Lavender background' }).click()
+  await expect(page.locator('.background-preview')).toHaveAttribute(
+    'data-background',
+    'lavender',
+  )
+  await page.screenshot({
+    path: testInfo.outputPath('background-settings.png'),
+  })
+  backend.failNext = true
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'Simulated write failure',
+  )
+  await expect(page.locator('.board-canvas')).toHaveAttribute(
+    'data-background',
+    'neutral',
+  )
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('.board-canvas')).toHaveAttribute(
+    'data-background',
+    'lavender',
+  )
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(page.locator('.board-canvas')).toHaveAttribute(
+    'data-background',
+    'lavender',
+  )
+  await page
+    .getByRole('button', { name: 'Open task Prepare proposal' })
+    .scrollIntoViewIfNeeded()
+  await page.screenshot({ path: testInfo.outputPath('lavender-board.png') })
+  await overview(page)
+  await expect(
+    page.getByRole('button', { name: 'Overview', exact: true }),
+  ).toHaveCount(0)
+  await expect(page.locator('.board-miniature')).toHaveAttribute(
+    'data-background',
+    'lavender',
+  )
+  await page.getByRole('button', { name: 'Hide board list' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Personal projects', exact: true }),
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: 'Show board list' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Personal projects', exact: true }),
+  ).toBeVisible()
+})
+
+test('chooses deadlines with a keyboard calendar, preserves date-only values, and clears dates', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  await page.getByRole('button', { name: 'Open task Prepare proposal' }).click()
+  await page.getByRole('button', { name: 'Choose due date' }).click()
+  const selected = page.locator('[data-date="2026-10-09"]')
+  await expect(selected).toBeFocused()
+  await selected.press('ArrowRight')
+  await expect(page.locator('[data-date="2026-10-10"]')).toBeFocused()
+  await page.locator('[data-date="2026-10-10"]').press('Enter')
+  await expect(page.getByLabel('Due date', { exact: true })).toHaveValue(
+    '2026-10-10',
+  )
+  await expect(
+    page.getByRole('button', { name: 'Choose due date' }),
+  ).toBeFocused()
+  await page.getByLabel('Due date', { exact: true }).fill('2028-02-29')
+  await page.getByRole('button', { name: 'Choose due date' }).click()
+  await page.locator('[data-date="2028-02-29"]').press('ArrowRight')
+  await expect(page.locator('[data-date="2028-03-01"]')).toBeFocused()
+  await page.locator('[data-date="2028-03-01"]').press('Escape')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('button', { name: 'Choose due date' }).click()
+  await page.screenshot({ path: testInfo.outputPath('date-picker.png') })
+  const bounds = await page.locator('.date-calendar').boundingBox()
+  const viewport = page.viewportSize()!
+  expect(bounds).not.toBeNull()
+  expect(bounds!.x).toBeGreaterThanOrEqual(0)
+  expect(bounds!.y).toBeGreaterThanOrEqual(0)
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width)
+  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height)
+  await page.mouse.click(viewport.width - 4, viewport.height / 2)
+  await expect(
+    page.getByRole('button', { name: 'Choose due date' }),
+  ).toHaveAttribute('aria-expanded', 'false')
+  await page.getByRole('button', { name: 'Choose due date' }).click()
+  await page.getByRole('button', { name: 'Clear date', exact: true }).click()
+  await expect(page.getByLabel('Due date', { exact: true })).toHaveValue('')
+  await page.getByRole('button', { name: 'Choose due date' }).click()
+  await page.getByRole('button', { name: 'Tomorrow', exact: true }).click()
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+  await expect(page.getByLabel('Due date', { exact: true })).toHaveValue(date)
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(page.getByText(`Due ${date}`, { exact: true })).toBeVisible()
 })

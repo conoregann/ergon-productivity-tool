@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DndContext,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
@@ -19,11 +21,11 @@ import {
 import type { ReactNode } from 'react'
 import { Plus, MoreHorizontal } from 'lucide-react'
 import { Rename } from '../../app/Rename'
-import type { Command } from '../../domain/kanban'
+import type { Card, Command } from '../../domain/kanban'
 import { ConflictError } from './api'
 import { Editor } from './Editor'
 import type { EditorState } from './Editor'
-import { KanbanColumn } from './KanbanColumn'
+import { CardContent, KanbanColumn } from './KanbanColumn'
 import { useBoard } from './useBoard'
 
 const collisionDetection: CollisionDetection = (args) => {
@@ -57,6 +59,11 @@ export function Kanban({
 }) {
   const { query, mutation } = useBoard(ownerId, boardId)
   const [editor, setEditor] = useState<EditorState | null>(null)
+  const [dragCard, setDragCard] = useState<Card | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
+  const [reducedMotion, setReducedMotion] = useState(
+    () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
   const [showArchived, setShowArchived] = useState(false)
   const returnFocus = useRef<HTMLElement | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -69,6 +76,12 @@ export function Kanban({
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   )
+  useEffect(() => {
+    const media = matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => setReducedMotion(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
   function openEditor(next: EditorState) {
     returnFocus.current = document.activeElement as HTMLElement
     mutation.reset()
@@ -111,6 +124,8 @@ export function Kanban({
     mutation.isPending || Boolean(board.archived_at) || Boolean(editor)
   const visibleCards = cards.filter((card) => !card.archived_at)
   function onDragEnd({ active, over }: DragEndEvent) {
+    setDragCard(null)
+    setDropTarget(null)
     if (!over || active.id === over.id || disabled) return
     const source = active.data.current
     const target = over.data.current
@@ -177,7 +192,7 @@ export function Kanban({
         </details>
         {board.archived_at && <span className="quiet-badge">Archived</span>}
       </header>
-      <div className="board-canvas">
+      <div className="board-canvas" data-background={board.background}>
         {mutation.error && !editor && (
           <div role="alert" className="error">
             {mutation.error.message}
@@ -234,6 +249,17 @@ export function Kanban({
         <DndContext
           sensors={sensors}
           collisionDetection={collisionDetection}
+          onDragStart={({ active }) => {
+            const card = cards.find((card) => active.id === 'card:' + card.id)
+            setDragCard(card ?? null)
+          }}
+          onDragOver={({ over }) =>
+            setDropTarget(over ? String(over.id) : null)
+          }
+          onDragCancel={() => {
+            setDragCard(null)
+            setDropTarget(null)
+          }}
           onDragEnd={onDragEnd}
           accessibility={{
             announcements: {
@@ -261,7 +287,7 @@ export function Kanban({
             strategy={horizontalListSortingStrategy}
           >
             <div
-              className="kanban-grid live-grid"
+              className={`kanban-grid live-grid ${dragCard ? 'is-sorting' : ''}`}
               role="group"
               aria-label="Board columns"
               tabIndex={0}
@@ -270,6 +296,8 @@ export function Kanban({
                 <KanbanColumn
                   key={column.id}
                   column={column}
+                  dragging={Boolean(dragCard)}
+                  dropTarget={dropTarget}
                   cards={visibleCards
                     .filter((card) => card.column_id === column.id)
                     .sort((a, b) => a.position - b.position)}
@@ -321,6 +349,25 @@ export function Kanban({
               </button>
             </div>
           </SortableContext>
+          <DragOverlay
+            dropAnimation={
+              reducedMotion
+                ? null
+                : {
+                    duration: 220,
+                    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    sideEffects: defaultDropAnimationSideEffects({
+                      styles: { active: { opacity: '0' } },
+                    }),
+                  }
+            }
+          >
+            {dragCard && (
+              <div className="task-card drag-preview" aria-hidden="true">
+                <CardContent card={dragCard} />
+              </div>
+            )}
+          </DragOverlay>
         </DndContext>
         {!columns.length && (
           <p className="preview-note">
