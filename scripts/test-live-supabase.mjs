@@ -166,13 +166,39 @@ try {
     'Verify priority persistence',
   )
   assert.equal(snapshot.cards[0].priority, 'urgent')
+  checked(
+    await alice.rpc('save_board', {
+      p_board_id: boardId,
+      p_version: snapshot.board.version,
+      p_title: 'Temporary verification board',
+      p_archived: false,
+      p_background: 'lavender',
+    }),
+    'Set board background',
+  )
+  snapshot = checked(
+    await alice.rpc('get_board_snapshot', { p_board_id: boardId }),
+    'Verify board background',
+  )
+  assert.equal(snapshot.board.background, 'lavender')
+  const foreignBackground = await bob.rpc('save_board', {
+    p_board_id: boardId,
+    p_version: snapshot.board.version,
+    p_title: 'Forbidden',
+    p_archived: false,
+    p_background: 'rose',
+  })
+  assert(
+    foreignBackground.error,
+    'Foreign board appearance writes must be denied',
+  )
   checked(await alice.auth.signOut(), 'Sign out temporary user')
   assert(
     (await alice.from('boards').select('id').eq('id', boardId)).error,
     'Signed-out access must be denied',
   )
   console.log(
-    'PASS: hosted creation, persistence, transactional movement, priority persistence, stale-write rejection, two-user isolation, and logout denial.',
+    'PASS: hosted creation, persistence, transactional movement, priority/background persistence, stale-write rejection, two-user isolation, and logout denial.',
   )
 } catch (error) {
   console.error('Live check failed:', error.message)

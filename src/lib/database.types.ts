@@ -18,6 +18,7 @@ export type Database = {
           version: number
           title: string
           archived_at: string | null
+          background: string
         }
         Insert: {
           id?: string
@@ -27,6 +28,7 @@ export type Database = {
           version?: number
           title: string
           archived_at?: string | null
+          background?: string
         }
         Update: {
           id?: string
@@ -36,6 +38,7 @@ export type Database = {
           version?: number
           title?: string
           archived_at?: string | null
+          background?: string
         }
         Relationships: []
       }
@@ -326,6 +329,7 @@ export type Database = {
           p_version: number | null
           p_title: string | null
           p_archived: boolean | null
+          p_background?: string | null
         }
         Returns: undefined
       }

@@ -370,3 +370,32 @@ it('persists priority, rejects invalid tiers atomically, and denies another user
     ]),
   ).rejects.toThrow(/Board unavailable/)
 })
+
+it('persists board background, rejects invalid colours, and isolates appearance writes', async () => {
+  const current = await revision()
+  await expect(
+    rpc('save_board', [board, current, 'Work', false, 'invalid']),
+  ).rejects.toThrow(/boards_background_check/)
+  expect(await revision()).toBe(current)
+  await rpc('save_board', [board, current, 'Work', false, 'lavender'])
+  await rpc('save_board', [board, await revision(), 'Renamed', false])
+  expect(
+    (
+      await db.query('select background from public.boards where id = $1', [
+        board,
+      ])
+    ).rows,
+  ).toEqual([{ background: 'lavender' }])
+  await expect(
+    rpc('save_board', [board, current, 'Stale', false, 'rose']),
+  ).rejects.toThrow(/Board changed/)
+  const latest = await revision()
+  await db.exec(`set request.jwt.claim.sub = '${bob}';`)
+  await expect(
+    rpc('save_board', [board, latest, 'Forbidden', false, 'rose']),
+  ).rejects.toThrow(/Board unavailable/)
+  await db.exec(`reset role; set role anon;`)
+  await expect(
+    rpc('save_board', [board, latest, 'Anonymous', false, 'blue']),
+  ).rejects.toThrow(/permission denied/)
+})
