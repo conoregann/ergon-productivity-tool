@@ -16,7 +16,7 @@ async function revision() {
   ).rows[0]!.version
 }
 async function rpc(name: string, args: unknown[]) {
-  return db.query(
+  return db.query<{ result: unknown }>(
     `select public.${name}(${args.map((_, i) => '$' + (i + 1)).join(',')}) as result`,
     args,
   )
@@ -292,4 +292,22 @@ it('allows only one competing write at the same revision', async () => {
   await expect(
     rpc('save_board', [board, null, 'Bypass', false]),
   ).rejects.toThrow(/Board changed/)
+})
+
+it('allows the restricted auth service to cascade account deletion', async () => {
+  await addCard()
+  await db.exec(
+    `reset role; create role auth_admin; grant usage on schema auth to auth_admin; grant select, delete on auth.users to auth_admin; set role auth_admin;`,
+  )
+  await expect(
+    db.query('delete from auth.users where id = $1', [alice]),
+  ).resolves.toBeDefined()
+  await db.exec('reset role;')
+  expect(
+    (
+      await db.query('select id from public.boards where owner_id = $1', [
+        alice,
+      ])
+    ).rows,
+  ).toHaveLength(0)
 })
