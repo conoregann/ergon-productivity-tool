@@ -4,7 +4,7 @@ Applies to frontend design and UI work throughout `src/`. Inherit the root `AGEN
 
 ## Design direction
 
-Build a minimal, clear, clean workspace for managing tasks and time. Use white, off-white, and light/dark greys as the base, with a restrained teal accent and colour-coded task priorities. Create structure through alignment, spacing, typography, and dividing lines. The interface should feel grounded and orderly, with every element serving the work.
+Build a minimal, clear, clean workspace for managing tasks and time. Use white, off-white, and light/dark greys as the base, with monochrome priority badges distinguished by tone and text. Create structure through alignment, spacing, typography, and dividing lines. The interface should feel grounded and orderly, with every element serving the work.
 
 - Keep navigation, toolbars, board columns, cards, and calendar grids aligned to a consistent layout.
 - Use flat surfaces and thin borders. Avoid floating panels, decorative shadows, gradients, glass effects, oversized rounding, and ornamental backgrounds.
@@ -29,7 +29,7 @@ The supplied kanban references establish visual direction, not functionality or 
 | Line         | Use thin, consistent dividers to define navigation, headers, workflow columns, and time grids. Lines must explain structure.                                    |
 | Shape        | Prefer simple rectangles and modest, consistent corner radii. Reserve pills for compact labels or counts when useful.                                           |
 | Form         | Establish grouping through surface tone, borders, and placement. Avoid simulated depth and raised or floating surfaces.                                         |
-| Colour       | Use a neutral palette by default. Any semantic colour must be restrained, necessary, and accompanied by text or another readable cue.                           |
+| Colour       | Use white, greys, and black in both themes. Communicate priority through labelled tonal badges; do not reintroduce a coloured interface accent.                 |
 | Texture      | Keep surfaces plain. Do not add noise, patterns, gradients, or decorative imagery.                                                                              |
 | Space        | Use a consistent spacing scale. Group related information closely; separate distinct regions clearly. Preserve breathing room without wasting the workspace.    |
 | Value (tone) | Use dark text for primary content, legible grey for metadata, and subtle light tones for surfaces. Ensure boundaries and interactive states remain perceivable. |
@@ -54,10 +54,10 @@ The supplied kanban references establish visual direction, not functionality or 
 ## Importance and status indicators
 
 - When importance is part of an implemented feature, show a compact, consistent indicator near the task title. Keep its placement stable across cards.
-- Prefer clear text such as `High`, `Medium`, and `Low`, optionally paired with a simple icon or restrained semantic tint. Never communicate importance through colour alone.
+- Prefer clear text such as `High`, `Medium`, and `Low`, optionally paired with a simple icon or distinct grey tone. Never communicate importance through colour alone.
 - Keep indicators subordinate to the task title. Avoid large badges, saturated fills, and competing clusters of chips.
 - Keep importance, workflow status, completion, deadlines, and scheduled time visually distinct. Do not infer importance from a due date or treat scheduling as workflow progress.
-- Task priority is an authorized feature: none, low, medium, high, and urgent. Use labelled, colour-coded badges and persist the selected tier.
+- Task priority is an authorized feature: none, low, medium, high, and urgent. Use labelled, monochrome badges and persist the selected tier.
 
 ## Layout and interaction
 
@@ -77,11 +77,13 @@ Inspect the implemented view at desktop and mobile sizes and with keyboard navig
 
 - The main task, current view, and next action are immediately clear.
 - Spacing, alignment, dividers, typography, and indicators follow one consistent system.
-- Neutral surfaces stay flat and grounded; teal actions and priority colours give meaningful emphasis.
+- Neutral surfaces stay flat and grounded; dark actions and tonal priority badges give meaningful emphasis.
 - Text, controls, and focus indicators meet accessibility contrast requirements; colour is never the only cue.
 - Realistic long content, empty/loading/error states, and dense content remain usable.
 - No decorative chrome, unnecessary overlays, hidden essential actions, or accidental overflow has been introduced.
 
 Run the relevant checks required by the root instructions for implementation changes. For documentation-only changes, formatting and diff review are sufficient. Report what was actually verified.
 
-Cards are draggable across their whole surface; do not add a separate card grab box. Keep action buttons usable without starting a drag, and retain keyboard dragging and the movement form. Signed-out users see authentication first; authenticated profiles and sign-out live in the collapsible sidebar.
+Cards are draggable across their whole surface; do not add a separate card grab box or visible Edit/Move buttons. Clicking a card opens a centred native modal; Enter opens it from the keyboard, while Space starts dragging. Placement controls belong inside the modal. Keep keyboard dragging for cards and columns. Signed-out users see authentication first; authenticated profiles and sign-out live in the collapsible sidebar.
+
+Board views fill the available screen and use contained horizontal scrolling. Board and column names rename inline; omit duplicate headings, contextual slogans, back links, and column arrow controls. Add-column is a header-height placeholder after the columns. The overview uses rectangular previews of real boards and a matching create tile. Support light and dark themes with neutral tokens. Use short, restrained interaction animations, smooth scrolling and proximity snap; never replace native wheel scrolling or override reduced-motion preferences.
