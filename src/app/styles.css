@@ -1119,7 +1119,8 @@ fieldset {
   border: 1px solid var(--line);
   border-radius: 4px;
 }
-.kanban-grid.is-sorting {
+.kanban-grid.is-sorting,
+.board-canvas:has(.drag-preview) .kanban-grid {
   scroll-behavior: auto;
   scroll-snap-type: none;
 }

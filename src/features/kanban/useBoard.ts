@@ -13,8 +13,10 @@ export function useBoard(ownerId: string, boardId: string) {
   const mutation = useMutation({
     mutationFn: ({ command, version }: { command: Command; version: number }) =>
       executeCommand(boardId, version, command),
-    onMutate: async ({ command }) => {
-      await cache.cancelQueries({ queryKey: key })
+    onMutate: ({ command }) => {
+      // Cancellation reverts an in-flight read synchronously. Publish the new
+      // layout in this event so the drop animation measures the destination.
+      void cache.cancelQueries({ queryKey: key })
       const previous = cache.getQueryData<BoardSnapshot>(key)
       if (previous) cache.setQueryData(key, applyCommand(previous, command))
       return { previous }

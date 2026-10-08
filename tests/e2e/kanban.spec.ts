@@ -560,3 +560,90 @@ test('chooses deadlines with a keyboard calendar, preserves date-only values, an
     .click()
   await expect(page.getByText(`Due ${date}`, { exact: true })).toBeVisible()
 })
+
+test('lands the drag preview in the new column without flashing at its origin', async ({
+  page,
+}) => {
+  const backend = await installBackend(page)
+  await createWorkspace(page)
+  const source = await page
+    .getByRole('heading', { name: 'Prepare proposal' })
+    .boundingBox()
+  const target = await page
+    .getByRole('region', { name: 'In progress', exact: true })
+    .locator('.column-dropzone')
+    .boundingBox()
+  if (!source || !target)
+    throw new Error('Drag source or destination unavailable')
+  await page.mouse.move(source.x + 12, source.y + source.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(source.x + 25, source.y + source.height / 2, {
+    steps: 3,
+  })
+  await expect(page.locator('.drag-preview')).toBeVisible()
+  await page.mouse.move(
+    Math.min(page.viewportSize()!.width - 24, target.x + target.width / 2),
+    target.y + 80,
+    {
+      steps: 12,
+    },
+  )
+  await expect(page.getByRole('status')).toContainText('In progress')
+  backend.delayNext = 700
+  await page.evaluate(() => {
+    const samples: {
+      x: number
+      destinationX: number
+      sourceVisible: boolean
+    }[] = []
+    ;(window as unknown as { dropFrames: typeof samples }).dropFrames = samples
+    document.addEventListener(
+      'mouseup',
+      () => {
+        const end = performance.now() + 500
+        const sample = () => {
+          const preview = document.querySelector('.drag-preview')
+          const sourceCard = document.querySelector(
+            '[aria-label="To do"] .task-card',
+          )
+          if (preview)
+            samples.push({
+              x: preview.getBoundingClientRect().x,
+              destinationX: document
+                .querySelector('[aria-label="In progress"] .column-dropzone')!
+                .getBoundingClientRect().x,
+              sourceVisible: Boolean(
+                sourceCard &&
+                Number(getComputedStyle(sourceCard).opacity) > 0.5,
+              ),
+            })
+          if (performance.now() < end) requestAnimationFrame(sample)
+        }
+        requestAnimationFrame(sample)
+      },
+      { once: true },
+    )
+  })
+  await page.mouse.up()
+  await expect(page.locator('.drag-preview')).toHaveCount(0)
+  await expect(
+    page
+      .getByRole('region', { name: 'In progress', exact: true })
+      .getByRole('heading', { name: 'Prepare proposal' }),
+  ).toBeVisible()
+  const frames = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          dropFrames: {
+            x: number
+            destinationX: number
+            sourceVisible: boolean
+          }[]
+        }
+      ).dropFrames,
+  )
+  expect(frames.length).toBeGreaterThan(0)
+  expect(frames.some((frame) => frame.sourceVisible)).toBe(false)
+  expect(frames.every((frame) => frame.x >= frame.destinationX - 5)).toBe(true)
+})
