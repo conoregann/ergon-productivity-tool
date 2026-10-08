@@ -2,7 +2,7 @@
 
 Private kanban task management and calendar planning. Tasks and scheduled work share one data model; deadlines and reserved work time remain distinct.
 
-**Status:** foundation implemented. Includes a React/TypeScript application shell, persistent GitHub OAuth integration, owner-scoped board listing, PostgreSQL schema/RLS, automated isolation tests, and CI. Board editing, calendar interactions, JSON portability, and PWA support follow in later phases. The app shows a setup state until Supabase is configured.
+**Status:** authenticated kanban implemented. Boards, columns, and tasks support editing, archiving, transactional movement, keyboard/form controls, optimistic updates, and stale-edit recovery. PostgreSQL RLS and automated isolation tests protect private data. Scheduling, JSON portability, and PWA support remain later phases. Real GitHub OAuth and deployment require the verification steps in the deployment guide.
 
 ## Local development
 
@@ -20,13 +20,13 @@ Never put a Supabase service-role key or GitHub client secret in `VITE_*` variab
 ```sh
 npm run check        # Format, lint, TypeScript, unit/auth and database tests, production build
 npx playwright install chromium
-npm run test:e2e     # Production-build smoke tests on desktop and mobile
-npm run db:types     # Regenerate scalar table types from SQL migrations
+npm run test:e2e     # Production-build workflow and recovery tests on desktop and mobile
+npm run db:types     # Regenerate table and RPC types from SQL migrations
 ```
 
-Database tests execute the actual migration in PGlite (PostgreSQL compiled to WASM); only Supabase's identity plumbing is substituted. Docker is not required for these tests. They verify RLS, anonymous denial, cross-owner and cross-board foreign keys, date/session constraints, version conflicts, completion history, and cascading deletion. They do not substitute for live OAuth and full Supabase integration verification.
+Database tests execute all migrations in PGlite (PostgreSQL compiled to WASM); only Supabase's identity plumbing is substituted. Docker is not required for these tests. They verify RLS, anonymous denial, cross-owner and cross-board foreign keys, date/session constraints, version conflicts, completion history, and cascading deletion. They do not substitute for live OAuth and full Supabase integration verification.
 
-The local type generator produces scalar CRUD types. Before adding joined queries, replace it with the official `supabase gen types typescript --local` generator, which also emits relationship metadata.
+The local type generator produces scalar CRUD and RPC types. Before adding joined queries, replace it with the official `supabase gen types typescript --local` generator, which also emits relationship metadata.
 
 ## Structure
 
@@ -34,15 +34,16 @@ The local type generator produces scalar CRUD types. Before adding joined querie
 src/
   app/                 Composition and styles
   features/auth/       Session lifecycle and authentication UI
-  features/boards/     Board query and read-only workspace
-  domain/              Pure rules, added with their consumers
+  features/boards/     Board listing and creation
+  features/kanban/      Editing, movement and optimistic recovery
+  domain/              Pure kanban rules
   lib/                 Supabase client, environment and generated types
   test/                Test setup
 supabase/
   migrations/          Versioned schema and ownership policies
   tests/               PostgreSQL security/invariant tests
 tests/e2e/             Browser checks
-scripts/               Database type generation
+scripts/               Database types and hosted verification
 docs/                  Product scope, architecture, deployment and decisions
 .github/workflows/     Quality gates
 ```
@@ -51,7 +52,7 @@ See [project overview](docs/project-overview.md), [architecture](docs/architectu
 
 ## Next milestones
 
-1. Board/column/card CRUD, accessible movement, and transactional reorder RPCs.
+1. Complete real GitHub login/reload/logout and deployed multi-user acceptance checks.
 2. Calendar library spike, session CRUD, daily/weekly grids, and timezone/DST tests.
 3. Search, filters, deadlines, overlaps, and mobile agenda/forms.
 4. JSON export/import and installable PWA (application-shell caching only).

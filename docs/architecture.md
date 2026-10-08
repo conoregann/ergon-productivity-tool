@@ -6,8 +6,9 @@ Ergon is a single React application backed by Supabase Auth and PostgreSQL. Verc
 
 - `src/app`: app composition, providers, and global styles.
 - `src/features/auth`: session lifecycle, GitHub OAuth, login and logout UI.
-- `src/features/boards`: board queries and the initial authenticated read-only view.
-- `src/domain`: pure task and scheduling rules (introduced with their consumers).
+- `src/features/boards`: board listing and creation.
+- `src/features/kanban`: board editing, movement, and mutation recovery.
+- `src/domain`: pure optimistic kanban transformations; scheduling rules come with scheduling.
 - `src/lib`: Supabase client and generated database types.
 - `supabase/migrations`: authoritative versioned schema and policies.
 - `supabase/tests`: database constraint and user-isolation tests.
@@ -19,12 +20,16 @@ All entities belong to an authenticated user. Composite foreign keys carry owner
 
 Sessions reference cards, and store `timestamptz` instants with `ends_at > starts_at`. Due dates use `date`. Completion is represented by `cards.completed_at`; a session derives completion from its card, retaining its original time/history. Columns do not implicitly determine completion.
 
-Ordering uses nonnegative integer positions with deferrable uniqueness per parent. Transactional reorder RPCs will be implemented alongside kanban movement, not speculative foundation APIs.
+Ordering uses nonnegative integer positions with deferrable uniqueness per parent. Security-invoker RPCs lock the owned board before mutating columns or cards, then repack positions within one transaction. Movement uses a destination and a before-item anchor; a null anchor appends. Archived cards retain positions and are included in repacking.
 
-Every mutable entity has a monotonically increasing `version` set by a database trigger. Future edit mutations must filter by the version originally read and return an explicit conflict when zero rows change. A timestamp alone is not the concurrency contract. TanStack Query refetches on window focus; mutation rollback is added with the first editable feature.
+Every mutable entity has a monotonically increasing `version`. Column/card writes also advance the parent board revision. Each mutation supplies the revision captured when the editor opened or movement started; a stale revision returns SQL state `PT409` (HTTP 409). The snapshot RPC reads the board, columns, and cards in one statement. TanStack Query cancels in-flight reads before optimistic updates, restores the previous snapshot on failure, and refetches authoritative data after each mutation. Conflicting drafts stay visible until the user closes them to review the latest board.
 
-## Foundation scope
+The narrowly scoped parent-revision trigger runs as a definer so Supabase Auth can cascade user deletion without application-table privileges. Its search path is empty and direct execution is revoked. Mutation RPCs remain invokers and enforce RLS, parent ownership, active-board checks, and revision checks.
 
-Included: repository conventions, strict frontend tooling, authenticated application shell, owner-scoped board reads, schema/RLS, security tests, CI, and Vercel configuration/setup instructions.
+Drag grips support keyboard sorting. Explicit movement forms and column reorder buttons provide native-control alternatives. Archiving never deletes scheduling history. Completion is an explicit task field independent of column movement.
 
-Subsequent phases: board/card CRUD and atomic reordering; calendar spike and scheduling; filtering/mobile agenda/accessibility; JSON portability and PWA; release verification. No offline writes or authenticated response caching in the foundation.
+## Current scope
+
+Included: repository conventions, strict frontend tooling, authenticated application shell, owner-scoped kanban CRUD, atomic ordering, conflict recovery, schema/RLS, security tests, CI, and Vercel configuration/setup instructions.
+
+Subsequent phases: calendar spike and scheduling; filtering/mobile agenda/accessibility; JSON portability and PWA; release verification. No offline writes or authenticated response caching in the foundation.
