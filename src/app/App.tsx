@@ -1,4 +1,6 @@
-import { CalendarDays, Columns3 } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
+import { AuthGate } from '../features/auth/AuthGate'
+import { Boards } from '../features/boards/Boards'
 
 export function App() {
   return (
@@ -8,12 +10,9 @@ export function App() {
       <p className="intro">
         Your tasks and your time, in one private workspace.
       </p>
-      <section className="panel" aria-label="Workspace">
-        <h2>
-          <Columns3 aria-hidden="true" /> Boards
-        </h2>
-        <p>Your workspace foundation is ready.</p>
-      </section>
+      <AuthGate>
+        <Boards />
+      </AuthGate>
       <p className="note">
         <CalendarDays aria-hidden="true" /> Plan the work. Protect the time.
       </p>
