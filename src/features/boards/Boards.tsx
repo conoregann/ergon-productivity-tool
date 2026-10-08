@@ -29,7 +29,10 @@ export function Boards() {
         (query.data.length ? (
           <ul className="board-list">
             {query.data.map((board) => (
-              <li key={board.id}>{board.title}</li>
+              <li key={board.id}>
+                <Columns3 aria-hidden="true" />
+                <span>{board.title}</span>
+              </li>
             ))}
           </ul>
         ) : (
