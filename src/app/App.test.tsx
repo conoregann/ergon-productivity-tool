@@ -28,7 +28,7 @@ it('renders a useful unconfigured application', () => {
   ).not.toBeInTheDocument()
 })
 
-it('keeps example content separate from the authenticated workspace', () => {
+it('shows board previews and the GitHub profile without placeholder content', () => {
   const cache = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   })
@@ -59,7 +59,9 @@ it('keeps example content separate from the authenticated workspace', () => {
       </AuthContext.Provider>
     </QueryClientProvider>,
   )
-  expect(screen.getByText('Private board')).toBeVisible()
+  expect(
+    screen.getByRole('button', { name: 'Open board Private board' }),
+  ).toBeVisible()
   expect(
     screen.queryByRole('heading', { name: 'Example board' }),
   ).not.toBeInTheDocument()

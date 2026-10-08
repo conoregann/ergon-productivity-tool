@@ -16,6 +16,9 @@ import {
   horizontalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
+import type { ReactNode } from 'react'
+import { Plus, MoreHorizontal } from 'lucide-react'
+import { Rename } from '../../app/Rename'
 import type { Command } from '../../domain/kanban'
 import { ConflictError } from './api'
 import { Editor } from './Editor'
@@ -45,10 +48,12 @@ export function Kanban({
   ownerId,
   boardId,
   onBack,
+  sidebarControl,
 }: {
   ownerId: string
   boardId: string
   onBack: () => void
+  sidebarControl: ReactNode
 }) {
   const { query, mutation } = useBoard(ownerId, boardId)
   const [editor, setEditor] = useState<EditorState | null>(null)
@@ -136,209 +141,227 @@ export function Kanban({
   }
   return (
     <section className="live-board" aria-labelledby="live-board-heading">
-      <button
-        className="text-button back-link"
-        onClick={onBack}
-        disabled={mutation.isPending}
-      >
-        ← All boards
-      </button>
-      <header className="section-header">
-        <div>
-          <p className="section-label">
-            {board.archived_at ? 'Archived board' : 'Your workspace'}
-          </p>
-          <h2 id="live-board-heading" ref={heading} tabIndex={-1}>
-            {board.title}
-          </h2>
-        </div>
-        <div className="board-toolbar">
+      <header className="workspace-header board-header">
+        {sidebarControl}
+        <h1 id="live-board-heading" ref={heading} tabIndex={-1}>
+          <Rename
+            value={board.title}
+            label="Board name"
+            disabled={mutation.isPending || Boolean(editor)}
+            onSave={(title) =>
+              send(
+                {
+                  kind: 'saveBoard',
+                  title,
+                  archived: Boolean(board.archived_at),
+                },
+                board.version,
+              )
+            }
+          />
+        </h1>
+        <details className="board-options">
+          <summary aria-label="Board options">
+            <MoreHorizontal aria-hidden="true" />
+          </summary>
           <button
-            className="button-secondary"
+            className="text-button"
             disabled={mutation.isPending}
-            onClick={() =>
+            onClick={(event) => {
+              event.currentTarget.closest('details')?.removeAttribute('open')
               openEditor({ kind: 'board', version: board.version })
-            }
+            }}
           >
-            Edit board
+            Board settings
           </button>
-          <button
-            disabled={disabled}
-            onClick={() =>
-              openEditor({
-                kind: 'column',
-                version: board.version,
-                column: null,
-              })
-            }
-          >
-            Add column
-          </button>
-        </div>
+        </details>
+        {board.archived_at && <span className="quiet-badge">Archived</span>}
       </header>
-      {mutation.error && (
-        <div role="alert" className="error">
-          <p>{mutation.error.message}</p>
-          {mutation.error instanceof ConflictError && editor && (
-            <button
-              className="button-secondary"
-              onClick={() => {
-                closeEditor()
-                mutation.reset()
-              }}
-            >
-              Close draft and review latest board
-            </button>
-          )}
-        </div>
-      )}
-      {query.isError && (
-        <p role="alert" className="error">
-          Could not refresh the board.{' '}
-          <button className="text-button" onClick={() => void query.refetch()}>
-            Try again
-          </button>
-        </p>
-      )}
-      {mutation.isPending && (
-        <p role="status" className="save-status">
-          Saving changes…
-        </p>
-      )}
-      {editor && (
-        <Editor
-          key={`${editor.kind}-${editor.version}`}
-          editor={editor}
-          snapshot={snapshot}
-          pending={mutation.isPending}
-          onSubmit={send}
-          onClose={closeEditor}
-        />
-      )}
-      {board.archived_at && (
-        <p className="preview-note">
-          This board is archived. Restore it through Edit board to make changes.
-        </p>
-      )}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={collisionDetection}
-        onDragEnd={onDragEnd}
-        accessibility={{
-          announcements: {
-            onDragStart: ({ active }) =>
-              `Picked up ${active.data.current?.label}.`,
-            onDragOver: ({ active, over }) =>
-              over
-                ? `${active.data.current?.label} moved over ${over.data.current?.label}.`
-                : `${active.data.current?.label} is outside a drop target.`,
-            onDragEnd: ({ active, over }) =>
-              over
-                ? `Dropped ${active.data.current?.label} at ${over.data.current?.label}.`
-                : `Movement of ${active.data.current?.label} cancelled.`,
-            onDragCancel: ({ active }) =>
-              `Movement of ${active.data.current?.label} cancelled.`,
-          },
-          screenReaderInstructions: {
-            draggable:
-              'Focus a card and press Space to pick it up, arrow keys to move, Space to drop, or Escape to cancel. You can also use the Move task form or column order buttons.',
-          },
-        }}
-      >
-        <SortableContext
-          items={columns.map((column) => 'column:' + column.id)}
-          strategy={horizontalListSortingStrategy}
-        >
-          <div className="kanban-grid live-grid">
-            {columns.map((column, index) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                cards={visibleCards
-                  .filter((card) => card.column_id === column.id)
-                  .sort((a, b) => a.position - b.position)}
-                disabled={disabled}
-                first={index === 0}
-                last={index === columns.length - 1}
-                onEdit={() =>
-                  openEditor({ kind: 'column', version: board.version, column })
-                }
-                onAdd={() =>
-                  openEditor({
-                    kind: 'card',
-                    version: board.version,
-                    columnId: column.id,
-                    card: null,
-                  })
-                }
-                onEarlier={() =>
-                  act({
-                    kind: 'moveColumn',
-                    id: column.id,
-                    beforeId: columns[index - 1]!.id,
-                  })
-                }
-                onLater={() =>
-                  act({
-                    kind: 'moveColumn',
-                    id: column.id,
-                    beforeId: columns[index + 2]?.id ?? null,
-                  })
-                }
-                onEditCard={(card) =>
-                  openEditor({
-                    kind: 'card',
-                    version: board.version,
-                    columnId: column.id,
-                    card,
-                  })
-                }
-                onMoveCard={(card) =>
-                  openEditor({ kind: 'move', version: board.version, card })
-                }
-              />
-            ))}
+      <div className="board-canvas">
+        {mutation.error && !editor && (
+          <div role="alert" className="error">
+            {mutation.error.message}
           </div>
-        </SortableContext>
-      </DndContext>
-      {!columns.length && (
-        <p className="preview-note">Add a column to start organising tasks.</p>
-      )}
-      <section className="archived-tasks">
-        <button
-          className="text-button"
-          aria-expanded={showArchived}
-          onClick={() => setShowArchived(!showArchived)}
-        >
-          Archived tasks ({cards.filter((card) => card.archived_at).length})
-        </button>
-        {showArchived && (
-          <ul className="board-list">
-            {cards
-              .filter((card) => card.archived_at)
-              .map((card) => (
-                <li key={card.id}>
-                  <span>{card.title}</span>
-                  <button
-                    className="button-secondary"
-                    disabled={disabled}
-                    onClick={() =>
-                      openEditor({
-                        kind: 'card',
-                        version: board.version,
-                        columnId: card.column_id,
-                        card,
-                      })
-                    }
-                  >
-                    Edit archived task
-                    <span className="sr-only"> {card.title}</span>
-                  </button>
-                </li>
-              ))}
-          </ul>
         )}
-      </section>
+        {query.isError && (
+          <p role="alert" className="error">
+            Could not refresh the board.{' '}
+            <button
+              className="text-button"
+              onClick={() => void query.refetch()}
+            >
+              Try again
+            </button>
+          </p>
+        )}
+        {mutation.isPending && (
+          <p role="status" className="save-status">
+            Saving changes…
+          </p>
+        )}
+        {editor && (
+          <Editor
+            key={`${editor.kind}-${editor.version}`}
+            editor={editor}
+            snapshot={snapshot}
+            pending={mutation.isPending}
+            onSubmit={send}
+            onClose={closeEditor}
+            error={mutation.error}
+            onReview={
+              mutation.error instanceof ConflictError
+                ? () => {
+                    closeEditor()
+                    mutation.reset()
+                  }
+                : null
+            }
+            onPlacement={() => {
+              if (editor.kind === 'card' && editor.card)
+                setEditor({
+                  kind: 'move',
+                  version: editor.version,
+                  card: editor.card,
+                })
+            }}
+          />
+        )}
+        {board.archived_at && (
+          <p className="preview-note">
+            Restore this board through Board settings to make changes.
+          </p>
+        )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={collisionDetection}
+          onDragEnd={onDragEnd}
+          accessibility={{
+            announcements: {
+              onDragStart: ({ active }) =>
+                `Picked up ${active.data.current?.label}.`,
+              onDragOver: ({ active, over }) =>
+                over
+                  ? `${active.data.current?.label} moved over ${over.data.current?.label}.`
+                  : `${active.data.current?.label} is outside a drop target.`,
+              onDragEnd: ({ active, over }) =>
+                over
+                  ? `Dropped ${active.data.current?.label} at ${over.data.current?.label}.`
+                  : `Movement of ${active.data.current?.label} cancelled.`,
+              onDragCancel: ({ active }) =>
+                `Movement of ${active.data.current?.label} cancelled.`,
+            },
+            screenReaderInstructions: {
+              draggable:
+                'Focus a card and press Space to pick it up, arrow keys to move, Space to drop, or Escape to cancel. Press Enter to edit a card, then choose Placement for the movement form. Column names can be clicked to rename.',
+            },
+          }}
+        >
+          <SortableContext
+            items={columns.map((column) => 'column:' + column.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div
+              className="kanban-grid live-grid"
+              role="group"
+              aria-label="Board columns"
+              tabIndex={0}
+            >
+              {columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  cards={visibleCards
+                    .filter((card) => card.column_id === column.id)
+                    .sort((a, b) => a.position - b.position)}
+                  disabled={disabled}
+                  onEdit={() =>
+                    openEditor({
+                      kind: 'column',
+                      version: board.version,
+                      column,
+                    })
+                  }
+                  onAdd={() =>
+                    openEditor({
+                      kind: 'card',
+                      version: board.version,
+                      columnId: column.id,
+                      card: null,
+                    })
+                  }
+                  onEditCard={(card) =>
+                    openEditor({
+                      kind: 'card',
+                      version: board.version,
+                      columnId: column.id,
+                      card,
+                    })
+                  }
+                  onRename={(title) =>
+                    send(
+                      { kind: 'saveColumn', id: column.id, title },
+                      board.version,
+                    )
+                  }
+                />
+              ))}
+              <button
+                className="add-column-tile"
+                disabled={disabled}
+                onClick={() =>
+                  openEditor({
+                    kind: 'column',
+                    version: board.version,
+                    column: null,
+                  })
+                }
+              >
+                <Plus aria-hidden="true" />
+                Add column
+              </button>
+            </div>
+          </SortableContext>
+        </DndContext>
+        {!columns.length && (
+          <p className="preview-note">
+            Add a column to start organising tasks.
+          </p>
+        )}
+        <section className="archived-tasks">
+          <button
+            className="text-button"
+            aria-expanded={showArchived}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            Archived tasks ({cards.filter((card) => card.archived_at).length})
+          </button>
+          {showArchived && (
+            <ul className="board-list">
+              {cards
+                .filter((card) => card.archived_at)
+                .map((card) => (
+                  <li key={card.id}>
+                    <button
+                      className="text-button"
+                      aria-label={`Open archived task ${card.title}`}
+                      disabled={disabled}
+                      onClick={() =>
+                        openEditor({
+                          kind: 'card',
+                          version: board.version,
+                          columnId: card.column_id,
+                          card,
+                        })
+                      }
+                    >
+                      {card.title}
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </section>
   )
 }

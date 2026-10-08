@@ -10,6 +10,9 @@ const queryClient = new QueryClient({
     queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: true },
   },
 })
+document.documentElement.dataset.theme =
+  localStorage.getItem('ergon-theme') === 'dark' ? 'dark' : 'light'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

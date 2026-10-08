@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -6,40 +7,33 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  ArrowLeft,
-  ArrowRight,
   Check,
   GripVertical,
-  Pencil,
   Plus,
   CalendarDays,
+  MoreHorizontal,
 } from 'lucide-react'
+import { Rename } from '../../app/Rename'
 import type { Card, Column } from '../../domain/kanban'
 
 type Props = {
   column: Column
   cards: Card[]
   disabled: boolean
-  first: boolean
-  last: boolean
   onEdit: () => void
   onAdd: () => void
-  onEarlier: () => void
-  onLater: () => void
   onEditCard: (card: Card) => void
-  onMoveCard: (card: Card) => void
+  onRename: (title: string) => Promise<void>
 }
 
 function TaskCard({
   card,
   disabled,
   onEdit,
-  onMove,
 }: {
   card: Card
   disabled: boolean
   onEdit: () => void
-  onMove: () => void
 }) {
   const {
     attributes,
@@ -59,18 +53,39 @@ function TaskCard({
       label: card.title,
     },
   })
+  const dragged = useRef(false)
+  useEffect(() => {
+    if (isDragging) dragged.current = true
+  }, [isDragging])
   return (
     <li
       ref={setNodeRef}
       {...listeners}
+      onMouseDown={(event) => {
+        dragged.current = false
+        listeners?.onMouseDown?.(event)
+      }}
+      onTouchStart={(event) => {
+        dragged.current = false
+        listeners?.onTouchStart?.(event)
+      }}
+      onClick={() => {
+        if (!disabled && !dragged.current) onEdit()
+      }}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`task-card live-task ${isDragging ? 'is-dragging' : ''}`}
+      className={`task-card ${isDragging ? 'is-dragging' : ''}`}
     >
       <div
         ref={setActivatorNodeRef}
         {...attributes}
         className="card-content"
-        aria-label={`Drag task ${card.title}`}
+        aria-label={`Open task ${card.title}`}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && !disabled && !isDragging) {
+            event.preventDefault()
+            onEdit()
+          }
+        }}
       >
         <div className="task-heading">
           <h4>{card.title}</h4>
@@ -99,19 +114,6 @@ function TaskCard({
           )}
         </div>
       </div>
-      <div
-        className="task-actions"
-        onMouseDown={(event) => event.stopPropagation()}
-        onTouchStart={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-      >
-        <button className="text-button" disabled={disabled} onClick={onEdit}>
-          Edit<span className="sr-only"> {card.title}</span>
-        </button>
-        <button className="text-button" disabled={disabled} onClick={onMove}>
-          Move<span className="sr-only"> {card.title}</span>
-        </button>
-      </div>
     </li>
   )
 }
@@ -120,14 +122,10 @@ export function KanbanColumn({
   column,
   cards,
   disabled,
-  first,
-  last,
   onEdit,
   onAdd,
-  onEarlier,
-  onLater,
   onEditCard,
-  onMoveCard,
+  onRename,
 }: Props) {
   const {
     setNodeRef,
@@ -150,10 +148,7 @@ export function KanbanColumn({
   return (
     <section
       ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`kanban-column ${isDragging ? 'is-dragging' : ''}`}
       aria-label={column.title}
     >
@@ -168,37 +163,33 @@ export function KanbanColumn({
         >
           <GripVertical aria-hidden="true" />
         </button>
-        <h3>{column.title}</h3>
+        <h3>
+          <Rename
+            value={column.title}
+            label="Column name"
+            disabled={disabled}
+            onSave={onRename}
+          />
+        </h3>
         <span className="count" aria-label={`${cards.length} tasks`}>
           {cards.length}
         </span>
+        <details className="column-options">
+          <summary aria-label={`Options for ${column.title}`}>
+            <MoreHorizontal aria-hidden="true" />
+          </summary>
+          <button
+            className="text-button"
+            disabled={disabled}
+            onClick={(event) => {
+              event.currentTarget.closest('details')?.removeAttribute('open')
+              onEdit()
+            }}
+          >
+            Column settings
+          </button>
+        </details>
       </header>
-      <div className="column-actions">
-        <button
-          className="icon-button"
-          disabled={disabled || first}
-          onClick={onEarlier}
-          aria-label={`Move ${column.title} earlier`}
-        >
-          <ArrowLeft aria-hidden="true" />
-        </button>
-        <button
-          className="icon-button"
-          disabled={disabled || last}
-          onClick={onLater}
-          aria-label={`Move ${column.title} later`}
-        >
-          <ArrowRight aria-hidden="true" />
-        </button>
-        <button
-          className="icon-button"
-          disabled={disabled}
-          onClick={onEdit}
-          aria-label={`Edit column ${column.title}`}
-        >
-          <Pencil aria-hidden="true" />
-        </button>
-      </div>
       <div
         ref={setDropRef}
         className={`column-dropzone ${isOver ? 'drop-target' : ''}`}
@@ -214,18 +205,13 @@ export function KanbanColumn({
                 card={card}
                 disabled={disabled}
                 onEdit={() => onEditCard(card)}
-                onMove={() => onMoveCard(card)}
               />
             ))}
           </ul>
         </SortableContext>
         {!cards.length && <p className="column-empty">No tasks</p>}
       </div>
-      <button
-        className="button-secondary add-task"
-        disabled={disabled}
-        onClick={onAdd}
-      >
+      <button className="add-task" disabled={disabled} onClick={onAdd}>
         <Plus aria-hidden="true" />
         Add task<span className="sr-only"> to {column.title}</span>
       </button>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Dialog } from '../../app/Dialog'
 import type { BoardSnapshot, Card, Column, Command } from '../../domain/kanban'
 
 export type EditorState =
@@ -13,6 +14,9 @@ type Props = {
   pending: boolean
   onSubmit: (command: Command, version: number) => Promise<void>
   onClose: () => void
+  error: Error | null
+  onReview: (() => void) | null
+  onPlacement: () => void
 }
 
 export function Editor({
@@ -21,6 +25,9 @@ export function Editor({
   pending,
   onSubmit,
   onClose,
+  error,
+  onReview,
+  onPlacement,
 }: Props) {
   const firstField = useRef<HTMLInputElement>(null)
   const subject =
@@ -148,8 +155,46 @@ export function Editor({
       editor.column &&
       !snapshot.cards.some((card) => card.column_id === editor.column!.id))
   return (
-    <section className="editor-panel" aria-labelledby="editor-heading">
-      <h3 id="editor-heading">{heading}</h3>
+    <Dialog title={heading} busy={pending} onClose={onClose}>
+      {error && (
+        <div role="alert" className="error">
+          <p>{error.message}</p>
+          {onReview && (
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={onReview}
+            >
+              Close draft and review latest board
+            </button>
+          )}
+        </div>
+      )}
+      {editor.kind === 'card' && editor.card && (
+        <button
+          className="text-button placement-link"
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            const dirty =
+              title !== editor.card!.title ||
+              description !== editor.card!.description ||
+              priority !== editor.card!.priority ||
+              deadline !== (editor.card!.due_date ?? '') ||
+              completed !== Boolean(editor.card!.completed_at) ||
+              archived !== Boolean(editor.card!.archived_at)
+            if (
+              !dirty ||
+              window.confirm(
+                'Discard unsaved task changes to change placement?',
+              )
+            )
+              onPlacement()
+          }}
+        >
+          Placement
+        </button>
+      )}
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -298,6 +343,6 @@ export function Editor({
           </div>
         </fieldset>
       </form>
-    </section>
+    </Dialog>
   )
 }
