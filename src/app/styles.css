@@ -1013,19 +1013,27 @@ fieldset {
 
 .boards-navigation {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  border-radius: 6px;
 }
 .boards-navigation .nav-item {
   flex: 1;
 }
-.boards-navigation .nav-item[aria-current='page'] {
+.boards-navigation:has(.nav-item[aria-current='page']),
+.boards-navigation:hover {
   background: var(--hover);
 }
 .boards-disclosure {
-  width: 32px;
-  min-height: 36px;
-  padding: 6px;
+  width: 34px;
+  min-height: 40px;
+  padding: 10px;
+  border: 0;
   flex-shrink: 0;
+}
+.boards-disclosure .nav-chevron {
+  width: 14px;
+  height: 14px;
+  margin: 0;
 }
 [data-background='neutral'] {
   --board-background: var(--canvas);
