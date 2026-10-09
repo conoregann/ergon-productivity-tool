@@ -70,6 +70,21 @@ try {
     'Read owner snapshot',
   )
   assert.equal(snapshot.columns.length, 3)
+  assert(Array.isArray(snapshot.labels), 'Apply the labels migration')
+  assert(Array.isArray(snapshot.cardLabels), 'Apply the labels migration')
+  const labelId = checked(
+    await alice.rpc('create_label', {
+      p_board_id: boardId,
+      p_version: snapshot.board.version,
+      p_name: 'Verification',
+      p_color: '#244e3c',
+    }),
+    'Create owned label',
+  )
+  snapshot = checked(
+    await alice.rpc('get_board_snapshot', { p_board_id: boardId }),
+    'Refresh label snapshot',
+  )
   const cardId = checked(
     await alice.rpc('create_card', {
       p_board_id: boardId,
@@ -77,6 +92,7 @@ try {
       p_column_id: snapshot.columns[0].id,
       p_title: 'Temporary task',
       p_priority: 'high',
+      p_label_ids: [labelId],
     }),
     'Create task',
   )
@@ -181,6 +197,57 @@ try {
     'Verify board background',
   )
   assert.equal(snapshot.board.background, 'lavender')
+  assert.equal(snapshot.cardLabels[0].label_id, labelId)
+  const sessionId = randomUUID()
+  checked(
+    await alice.rpc('create_session', {
+      p_id: sessionId,
+      p_card_id: cardId,
+      p_starts_at: '2026-10-09T08:00:00Z',
+      p_ends_at: '2026-10-09T09:00:00Z',
+    }),
+    'Create scheduled session',
+  )
+  checked(
+    await alice.rpc('save_calendar_preferences', {
+      p_version: 0,
+      p_timezone: 'Europe/Dublin',
+      p_week_starts_on: 1,
+      p_calendar_view: 'agenda',
+    }),
+    'Save calendar preferences',
+  )
+  const schedule = checked(
+    await alice.rpc('get_scheduling_snapshot'),
+    'Read scheduling snapshot',
+  )
+  assert.equal(schedule.sessions[0].id, sessionId)
+  assert.equal(schedule.preferences.timezone, 'Europe/Dublin')
+  assert.equal(schedule.cards[0].column_id, snapshot.cards[0].column_id)
+  assert.equal(schedule.cards[0].version, snapshot.cards[0].version)
+  assert.equal(schedule.boards[0].version, snapshot.board.version)
+  const foreignSchedule = checked(
+    await bob.rpc('get_scheduling_snapshot'),
+    'Read second-user schedule',
+  )
+  assert.deepEqual(foreignSchedule.sessions, [])
+  assert.deepEqual(foreignSchedule.cards, [])
+  const exported = checked(
+    await alice.rpc('export_workspace'),
+    'Export workspace',
+  )
+  assert.equal(exported.card_labels[0].label_id, labelId)
+  assert.equal(exported.scheduled_sessions[0].id, sessionId)
+  checked(
+    await bob.rpc('import_workspace', { p_data: exported }),
+    'Import independent copies for second user',
+  )
+  const imported = checked(await bob.rpc('export_workspace'), 'Export copies')
+  assert.equal(imported.boards.length, 1)
+  assert.notEqual(imported.boards[0].id, boardId)
+  assert.notEqual(imported.cards[0].id, cardId)
+  assert.equal(imported.card_labels[0].card_id, imported.cards[0].id)
+  assert.equal(imported.scheduled_sessions[0].card_id, imported.cards[0].id)
   const foreignBackground = await bob.rpc('save_board', {
     p_board_id: boardId,
     p_version: snapshot.board.version,
@@ -198,7 +265,7 @@ try {
     'Signed-out access must be denied',
   )
   console.log(
-    'PASS: hosted creation, persistence, transactional movement, priority/background persistence, stale-write rejection, two-user isolation, and logout denial.',
+    'PASS: hosted board/card/label persistence, transactional movement, scheduling/preferences, JSON export/import, stale-write rejection, two-user isolation, and logout denial.',
   )
 } catch (error) {
   console.error('Live check failed:', error.message)

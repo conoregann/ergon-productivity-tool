@@ -8,7 +8,9 @@ Ergon is a single React application backed by Supabase Auth and PostgreSQL. Verc
 - `src/features/auth`: session lifecycle, GitHub OAuth, login and logout UI.
 - `src/features/boards`: board listing and creation.
 - `src/features/kanban`: board editing, movement, and mutation recovery.
-- `src/domain`: pure optimistic kanban transformations; scheduling rules come with scheduling.
+- `src/features/scheduling` and `src/features/timetable`: calendar preferences, scheduled sessions, time grids, and mobile agenda.
+- `src/features/portability`: JSON export/import.
+- `src/domain`: pure kanban transformations, filtering, scheduling/timezone rules, and portability validation.
 - `src/lib`: Supabase client and generated database types.
 - `supabase/migrations`: authoritative versioned schema and policies.
 - `supabase/tests`: database constraint and user-isolation tests.
@@ -30,6 +32,10 @@ Whole task cards support pointer and keyboard sorting; action buttons do not sta
 
 ## Current scope
 
-Included: repository conventions, strict frontend tooling, authenticated application shell, owner-scoped kanban CRUD, atomic ordering, conflict recovery, schema/RLS, security tests, CI, and Vercel configuration/setup instructions.
+Included: repository conventions, strict frontend tooling, authenticated application shell, owner-scoped kanban CRUD and labels/filtering, atomic ordering, conflict recovery, scheduling and calendar preferences, daily/weekly grids and mobile agenda, JSON portability, schema/RLS, security tests, CI, and Vercel configuration/setup instructions.
 
-Subsequent phases: calendar spike and scheduling; filtering/mobile agenda/accessibility; JSON portability and PWA; release verification. No offline writes or authenticated response caching in the foundation.
+Remaining: PWA and release verification, including physical-device and screen-reader checks. No offline writes or authenticated response caching. The calendar library decision and spike are recorded in `docs/decisions/0002-calendar-library.md`.
+
+Labels belong to a board. Label CRUD and card assignment writes lock and revision-check that board; labels and their assignments advance its aggregate revision. Board snapshots include both collections. Task creation/editing saves assignments atomically with card fields; omitted assignments preserve existing links for older clients and an empty list clears them. The label manager retains failed/conflicting drafts and deletion removes assignments without deleting tasks. Board search matches titles/descriptions case-insensitively and combines with label, priority, and explicit completion filters; archived tasks use the same filters in their separate disclosure. Filtering never rewrites task positions or workflow state.
+
+Scheduling snapshots read all owned sessions, cards, boards, labels, assignments, and calendar preferences in one statement, including archived/completed history. Session edits and removal check the session revision, independently of board revisions; session writes never update cards, deadlines, or workflow status. Client-generated session IDs make create retries safe after a lost response. Active task/board checks also apply to direct session inserts and updates; archived sessions remain readable and removable. Calendar preferences are saved with a revision check, using version zero for the first insert. Scheduling keeps saved data visible until writes succeed, retains failed drafts, and refetches after success or failure to recover from uncertain network outcomes. The saved timezone controls local form conversion to UTC instants; nonexistent or ambiguous daylight-saving times require correction instead of silent normalization. Week-start and calendar-view preferences control the timetable range and initial view.
