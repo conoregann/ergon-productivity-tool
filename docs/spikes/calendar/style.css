@@ -1,0 +1,48 @@
+body {
+  margin: 0;
+  font: 16px system-ui;
+  color: #17212b;
+}
+main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 16px;
+}
+nav,
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+button,
+input,
+select {
+  font: inherit;
+  min-height: 44px;
+  max-width: 100%;
+}
+.external {
+  padding: 12px;
+  background: #d9eaff;
+  cursor: grab;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  form {
+    flex-direction: column;
+  }
+  .fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
