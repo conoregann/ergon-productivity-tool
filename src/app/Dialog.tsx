@@ -8,22 +8,33 @@ export function Dialog({
   busy = false,
   onClose,
   children,
-}: PropsWithChildren<{ title: string; busy?: boolean; onClose: () => void }>) {
+  className = '',
+}: PropsWithChildren<{
+  title: string
+  busy?: boolean
+  onClose: () => void
+  className?: string
+}>) {
   const ref = useRef<HTMLDialogElement>(null)
+  const returnFocus = useRef(document.activeElement as HTMLElement | null)
   useEffect(() => {
     const dialog = ref.current!
+    const previousFocus = returnFocus.current
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     dialog.showModal()
     return () => {
       dialog.close()
       document.body.style.overflow = overflow
+      requestAnimationFrame(() => {
+        if (previousFocus?.isConnected) previousFocus.focus()
+      })
     }
   }, [])
   return createPortal(
     <dialog
       ref={ref}
-      className="editor-dialog"
+      className={`editor-dialog ${className}`}
       aria-labelledby="dialog-title"
       onCancel={(event) => {
         event.preventDefault()

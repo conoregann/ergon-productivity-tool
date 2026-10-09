@@ -15,6 +15,9 @@
   --on-strong: #fff;
   --hover: #ececec;
   --input-line: #c8c8c8;
+  --completion: #6d28d9;
+  --completion-soft: #f3edff;
+  --destructive: #b42336;
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
@@ -28,6 +31,9 @@
   --on-strong: #202020;
   --hover: #303030;
   --input-line: #555;
+  --completion: #c4a5ff;
+  --completion-soft: #302443;
+  --destructive: #ffa3ae;
 }
 * {
   box-sizing: border-box;
@@ -851,8 +857,157 @@ fieldset {
   margin-top: 20px;
 }
 .danger-action {
-  margin-left: auto;
+  margin-right: auto;
   color: var(--muted);
+}
+.task-editor .dialog-header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.task-editor .placement-link {
+  padding: 6px 10px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  min-height: 32px;
+  font-size: 12px;
+}
+.task-editor fieldset {
+  gap: 16px;
+}
+.task-editor label,
+.task-editor .form-field {
+  color: var(--text);
+}
+.task-editor textarea {
+  min-height: 88px;
+  line-height: 1.6;
+}
+.task-details-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 16px;
+}
+.task-status {
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 160ms,
+    border-color 160ms;
+}
+.task-status:hover {
+  background: var(--surface);
+}
+.task-status .status-icon {
+  color: var(--muted);
+  margin-right: 4px;
+}
+.status-checkbox {
+  position: relative;
+  display: inline-flex;
+  margin-left: auto;
+}
+.status-checkbox input[type='checkbox'] {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 160ms,
+    border-color 160ms;
+}
+.status-checkbox input:checked {
+  background: var(--strong);
+  border-color: var(--strong);
+}
+.status-checkbox > svg {
+  position: absolute;
+  inset: 3px;
+  width: 16px;
+  height: 16px;
+  color: var(--on-strong);
+  stroke-width: 2.5;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 160ms,
+    transform 160ms;
+}
+.status-checkbox input:checked + svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.completion-control:has(input:checked) {
+  background: var(--completion-soft);
+  border-color: var(--completion);
+  color: var(--completion);
+}
+.completion-control:has(input:checked) .status-icon {
+  color: var(--completion);
+}
+.completion-control input:checked {
+  background: var(--completion);
+  border-color: var(--completion);
+}
+.completion-control input:checked + svg {
+  color: var(--canvas);
+  animation: completion-check 220ms ease-out;
+}
+.task-status:has(input:disabled) {
+  opacity: 0.55;
+  cursor: default;
+}
+.task-editor .form-actions {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  margin-top: 4px;
+  justify-content: flex-end;
+}
+.task-editor .form-actions button {
+  min-height: 42px;
+}
+.task-editor .danger-action {
+  border-color: transparent;
+  background: transparent;
+  color: var(--destructive);
+  padding-inline: 8px;
+}
+.task-editor .danger-action:hover {
+  border-color: var(--destructive);
+  opacity: 1;
+}
+.quiet-badge.completion-badge {
+  background: var(--completion-soft);
+  color: var(--completion);
+}
+@keyframes completion-check {
+  from {
+    transform: scale(0.5);
+  }
+  65% {
+    transform: scale(1.15);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@media (max-width: 480px) {
+  .task-details-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .task-editor .form-actions .danger-action {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
 }
 .error {
   border-left: 2px solid var(--text);
@@ -1228,4 +1383,85 @@ fieldset {
 
 .date-input-row input::-webkit-calendar-picker-indicator {
   display: none;
+}
+
+.task-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.task-toolbar > label,
+.task-toolbar > .form-field {
+  flex: 1 1 120px;
+  max-width: 180px;
+}
+.task-toolbar > label:first-child {
+  flex-basis: 220px;
+  max-width: 320px;
+}
+.task-toolbar button {
+  min-height: 40px;
+}
+.task-toolbar .muted {
+  align-self: center;
+  font-size: 12px;
+}
+.task-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.task-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.label-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  border: 1px solid var(--input-line);
+}
+.label-assignment {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.label-assignment .checkbox-label {
+  overflow-wrap: anywhere;
+}
+.label-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.label-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+@media (max-width: 640px) {
+  .task-toolbar {
+    padding: 10px 16px;
+    gap: 8px;
+  }
+  .task-toolbar > label,
+  .task-toolbar > .form-field,
+  .task-toolbar > label:first-child {
+    flex: 1 1 calc(50% - 8px);
+    max-width: none;
+  }
 }

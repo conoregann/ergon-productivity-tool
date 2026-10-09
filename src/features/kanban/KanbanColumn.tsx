@@ -14,11 +14,12 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { Rename } from '../../app/Rename'
-import type { Card, Column } from '../../domain/kanban'
+import type { Card, Column, Label } from '../../domain/kanban'
 
 type Props = {
   column: Column
   cards: Card[]
+  labelsForCard: (card: Card) => Label[]
   disabled: boolean
   onEdit: () => void
   onAdd: () => void
@@ -28,7 +29,13 @@ type Props = {
   dragging: boolean
 }
 
-export function CardContent({ card }: { card: Card }) {
+export function CardContent({
+  card,
+  labels = [],
+}: {
+  card: Card
+  labels?: Label[]
+}) {
   return (
     <>
       <div className="task-heading">
@@ -43,9 +50,23 @@ export function CardContent({ card }: { card: Card }) {
       {card.description && (
         <p className="task-description">{card.description}</p>
       )}
+      {!!labels.length && (
+        <div className="task-labels">
+          {labels.map((label) => (
+            <span className="task-label" key={label.id}>
+              <span
+                aria-hidden="true"
+                className="label-dot"
+                style={{ backgroundColor: label.color }}
+              />
+              {label.name}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="task-meta">
         {card.completed_at && (
-          <span className="quiet-badge">
+          <span className="quiet-badge completion-badge">
             <Check aria-hidden="true" />
             Completed
           </span>
@@ -63,12 +84,14 @@ export function CardContent({ card }: { card: Card }) {
 
 function TaskCard({
   card,
+  labels,
   disabled,
   onEdit,
   dropTarget,
 }: {
   dropTarget: boolean
   card: Card
+  labels: Label[]
   disabled: boolean
   onEdit: () => void
 }) {
@@ -128,7 +151,7 @@ function TaskCard({
           }
         }}
       >
-        <CardContent card={card} />
+        <CardContent card={card} labels={labels} />
       </div>
     </li>
   )
@@ -137,6 +160,7 @@ function TaskCard({
 export function KanbanColumn({
   column,
   cards,
+  labelsForCard,
   disabled,
   onEdit,
   onAdd,
@@ -221,6 +245,7 @@ export function KanbanColumn({
               <TaskCard
                 key={card.id}
                 card={card}
+                labels={labelsForCard(card)}
                 disabled={disabled}
                 dropTarget={dropTarget === 'card:' + card.id}
                 onEdit={() => onEditCard(card)}

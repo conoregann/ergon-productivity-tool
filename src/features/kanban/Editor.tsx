@@ -1,4 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  Archive,
+  Check,
+  CircleCheck,
+  MoveRight,
+  Save,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { Dialog } from '../../app/Dialog'
 import { DatePicker } from './DatePicker'
 import { boardBackgrounds } from './appearance'
@@ -63,6 +72,13 @@ export function Editor({
     editor.kind === 'move' ? editor.card.column_id : '',
   )
   const [beforeId, setBeforeId] = useState('')
+  const [labelIds, setLabelIds] = useState<string[]>(() =>
+    editor.kind === 'card'
+      ? snapshot.cardLabels
+          .filter((link) => link.card_id === editor.card?.id)
+          .map((link) => link.label_id)
+      : [],
+  )
   useEffect(() => {
     firstField.current?.focus()
   }, [])
@@ -126,12 +142,13 @@ export function Editor({
     }
     return submit(
       editor.card
-        ? { kind: 'saveCard', id: editor.card.id, fields }
+        ? { kind: 'saveCard', id: editor.card.id, fields, labelIds }
         : {
             kind: 'createCard',
             id: crypto.randomUUID(),
             columnId: editor.columnId,
             fields,
+            labelIds,
           },
     )
   }
@@ -165,7 +182,12 @@ export function Editor({
       editor.column &&
       !snapshot.cards.some((card) => card.column_id === editor.column!.id))
   return (
-    <Dialog title={heading} busy={pending} onClose={onClose}>
+    <Dialog
+      title={heading}
+      busy={pending}
+      onClose={onClose}
+      className={editor.kind === 'card' ? 'task-editor' : ''}
+    >
       {error && (
         <div role="alert" className="error">
           <p>{error.message}</p>
@@ -192,7 +214,13 @@ export function Editor({
               priority !== editor.card!.priority ||
               deadline !== (editor.card!.due_date ?? '') ||
               completed !== Boolean(editor.card!.completed_at) ||
-              archived !== Boolean(editor.card!.archived_at)
+              archived !== Boolean(editor.card!.archived_at) ||
+              labelIds.slice().sort().join(',') !==
+                snapshot.cardLabels
+                  .filter((link) => link.card_id === editor.card!.id)
+                  .map((link) => link.label_id)
+                  .sort()
+                  .join(',')
             if (
               !dirty ||
               window.confirm(
@@ -202,6 +230,7 @@ export function Editor({
               onPlacement()
           }}
         >
+          <MoveRight aria-hidden="true" />
           Placement
         </button>
       )}
@@ -272,42 +301,90 @@ export function Editor({
                   onChange={(event) => setDescription(event.target.value)}
                 />
               </label>
-              <div className="form-field">
-                <label htmlFor="card-priority">Priority</label>
-                <select
-                  id="card-priority"
-                  value={priority}
-                  onChange={(event) => setPriority(event.target.value)}
+              <div className="task-details-row">
+                <div className="form-field">
+                  <label htmlFor="card-priority">Priority</label>
+                  <select
+                    id="card-priority"
+                    value={priority}
+                    onChange={(event) => setPriority(event.target.value)}
+                  >
+                    <option value="none">No priority</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div
+                  className="label-assignment"
+                  role="group"
+                  aria-label="Task labels"
                 >
-                  <option value="none">No priority</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
+                  <span>Labels</span>
+                  {snapshot.labels.length ? (
+                    snapshot.labels.map((label) => (
+                      <label className="checkbox-label" key={label.id}>
+                        <input
+                          type="checkbox"
+                          checked={labelIds.includes(label.id)}
+                          onChange={(event) =>
+                            setLabelIds(
+                              event.target.checked
+                                ? [...labelIds, label.id]
+                                : labelIds.filter((id) => id !== label.id),
+                            )
+                          }
+                        />
+                        <span
+                          className="label-dot"
+                          style={{ backgroundColor: label.color }}
+                          aria-hidden="true"
+                        />
+                        {label.name}
+                      </label>
+                    ))
+                  ) : (
+                    <p className="muted">
+                      Create labels using Manage labels on the board.
+                    </p>
+                  )}
+                </div>
+                <DatePicker value={deadline} onChange={setDeadline} />
               </div>
-              <DatePicker value={deadline} onChange={setDeadline} />
               {editor.card && (
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={completed}
-                    onChange={(event) => setCompleted(event.target.checked)}
-                  />
-                  Completed
+                <label className="checkbox-label task-status completion-control">
+                  <CircleCheck aria-hidden="true" className="status-icon" />
+                  <span>Completed</span>
+                  <span className="status-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={completed}
+                      onChange={(event) => setCompleted(event.target.checked)}
+                    />
+                    <Check aria-hidden="true" />
+                  </span>
                 </label>
               )}
             </>
           )}
           {(editor.kind === 'board' ||
             (editor.kind === 'card' && editor.card)) && (
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={archived}
-                onChange={(event) => setArchived(event.target.checked)}
-              />
-              Archived
+            <label
+              className={`checkbox-label ${editor.kind === 'card' ? 'task-status' : ''}`}
+            >
+              {editor.kind === 'card' && (
+                <Archive aria-hidden="true" className="status-icon" />
+              )}
+              <span>Archived</span>
+              <span className={editor.kind === 'card' ? 'status-checkbox' : ''}>
+                <input
+                  type="checkbox"
+                  checked={archived}
+                  onChange={(event) => setArchived(event.target.checked)}
+                />
+                {editor.kind === 'card' && <Check aria-hidden="true" />}
+              </span>
             </label>
           )}
           {editor.kind === 'move' && (
@@ -356,28 +433,31 @@ export function Editor({
             </>
           )}
           <div className="form-actions">
-            <button
-              type="submit"
-              disabled={editor.kind !== 'move' && !title.trim()}
-            >
-              {pending ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              className="button-secondary"
-              type="button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
             {canDelete && (
               <button
                 className="button-secondary danger-action"
                 type="button"
                 onClick={remove}
               >
+                <Trash2 aria-hidden="true" />
                 Delete {editor.kind === 'card' ? 'task' : editor.kind}
               </button>
             )}
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={onClose}
+            >
+              <X aria-hidden="true" />
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={editor.kind !== 'move' && !title.trim()}
+            >
+              <Save aria-hidden="true" />
+              {pending ? 'Saving…' : 'Save'}
+            </button>
           </div>
         </fieldset>
       </form>

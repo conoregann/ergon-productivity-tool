@@ -25,6 +25,8 @@ it('publishes optimistic placement synchronously and ignores a cancelled stale r
       updated_at: '2026-10-08T09:00:00Z',
     },
     columns: [],
+    labels: [],
+    cardLabels: [],
     cards: [],
   }
   const command: Command = {

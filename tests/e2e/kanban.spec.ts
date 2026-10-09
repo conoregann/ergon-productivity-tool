@@ -45,6 +45,63 @@ async function boardSettings(page: Page) {
     .click()
 }
 
+test('completes tasks with the keyboard, preserves drafts on cancel, and honours reduced motion', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  const task = page.getByRole('button', { name: 'Open task Prepare proposal' })
+  await task.click()
+  const dialog = page.getByRole('dialog', { name: 'Edit task' })
+  const completed = dialog.getByRole('checkbox', { name: 'Completed' })
+  await completed.focus()
+  await page.keyboard.press('Space')
+  await expect(completed).toBeChecked()
+  await expect(
+    dialog.getByRole('checkbox', { name: 'Archived' }),
+  ).not.toBeChecked()
+  await page.screenshot({
+    path: testInfo.outputPath('task-editor-completed.png'),
+    fullPage: true,
+  })
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(task).toBeFocused()
+  await expect(task.getByText('Completed', { exact: true })).toHaveCount(0)
+  await task.click()
+  await expect(completed).not.toBeChecked()
+  await completed.check()
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(task.getByText('Completed', { exact: true })).toBeVisible()
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(task.getByText('Completed', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Use dark mode' }).click()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await task.click()
+  await expect(completed).toBeChecked()
+  await completed.uncheck()
+  await completed.check()
+  expect(
+    await dialog
+      .locator('.completion-control .status-checkbox > svg')
+      .evaluate((element) => getComputedStyle(element).animationName),
+  ).toBe('none')
+  await page.screenshot({
+    path: testInfo.outputPath('task-editor-dark.png'),
+    fullPage: true,
+  })
+  await expect(
+    dialog.getByRole('button', { name: 'Delete task' }),
+  ).toBeVisible()
+  expect(
+    await dialog.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true)
+})
+
 test('opens a board without a loading screen while its snapshot is pending', async ({
   page,
 }, testInfo) => {
@@ -687,4 +744,136 @@ test('lands the drag preview in the new column without flashing at its origin', 
   expect(frames.length).toBeGreaterThan(0)
   expect(frames.some((frame) => frame.sourceVisible)).toBe(false)
   expect(frames.every((frame) => frame.x >= frame.destinationX - 5)).toBe(true)
+})
+
+test('manages labels and combines search, label, priority and completion filters', async ({
+  page,
+}, testInfo) => {
+  const backend = await installBackend(page)
+  await createWorkspace(page)
+  await page.getByRole('button', { name: 'Manage labels', exact: true }).click()
+  await page.getByRole('button', { name: 'New label', exact: true }).click()
+  await page.getByLabel('Label name', { exact: true }).fill('Client')
+  await page.getByLabel('Label colour').fill('#125abc')
+  backend.failNext = true
+  await page.getByRole('button', { name: 'Save label', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'Simulated write failure',
+  )
+  await expect(page.getByLabel('Label name', { exact: true })).toHaveValue(
+    'Client',
+  )
+  await page.getByRole('button', { name: 'Save label', exact: true }).click()
+  await page.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Manage labels', exact: true }),
+  ).toBeFocused()
+  await page.getByRole('button', { name: 'Open task Prepare proposal' }).click()
+  const labelCheckbox = page.getByRole('checkbox', {
+    name: 'Client',
+    exact: true,
+  })
+  await labelCheckbox.focus()
+  await labelCheckbox.press('Space')
+  await expect(labelCheckbox).toBeChecked()
+  await page.getByRole('checkbox', { name: 'Completed', exact: true }).check()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  const task = page.getByRole('button', { name: 'Open task Prepare proposal' })
+  await expect(task.getByText('Client', { exact: true })).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Add task to To do', exact: true })
+    .click()
+  await page.getByLabel('Title', { exact: true }).fill('Other task')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByLabel('Search tasks', { exact: true }).fill(' DELIVERABLES ')
+  await expect(page.getByLabel('Search tasks', { exact: true })).toHaveValue(
+    ' DELIVERABLES ',
+  )
+  await expect(
+    page.getByRole('button', { name: 'Open task Other task' }),
+  ).toHaveCount(0)
+  await page
+    .getByLabel('Label filter', { exact: true })
+    .selectOption({ label: 'Client' })
+  await page.getByLabel('Priority filter', { exact: true }).selectOption('high')
+  await page
+    .getByLabel('Completion filter', { exact: true })
+    .selectOption('completed')
+  await expect(page.getByLabel('Search tasks', { exact: true })).toHaveValue(
+    ' DELIVERABLES ',
+  )
+  await expect(task).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Open task Other task' }),
+  ).toHaveCount(0)
+  await page.screenshot({
+    path: testInfo.outputPath('task-filters.png'),
+    fullPage: true,
+  })
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true)
+  await page
+    .getByLabel('Completion filter', { exact: true })
+    .selectOption('incomplete')
+  await expect(
+    page.getByText('No tasks match your search and filters.'),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Open task Other task' }),
+  ).toBeVisible()
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(task.getByText('Client', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Manage labels', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Edit label Client', exact: true })
+    .click()
+  await page.getByLabel('Label name', { exact: true }).fill('Customer')
+  backend.conflictNext = true
+  await page.getByRole('button', { name: 'Save label', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'another device',
+  )
+  await expect(page.getByLabel('Label name', { exact: true })).toHaveValue(
+    'Customer',
+  )
+  await page
+    .getByRole('button', { name: 'Discard draft and review labels' })
+    .click()
+  await page
+    .getByRole('button', { name: 'Edit label Client', exact: true })
+    .click()
+  await page.getByLabel('Label name', { exact: true }).fill('Customer')
+  await page.getByRole('button', { name: 'Save label', exact: true }).click()
+  await page.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(task.getByText('Customer', { exact: true })).toBeVisible()
+  await task.click()
+  await page.getByRole('checkbox', { name: 'Customer', exact: true }).uncheck()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(task.getByText('Customer', { exact: true })).toHaveCount(0)
+  await task.click()
+  await page.getByRole('checkbox', { name: 'Customer', exact: true }).check()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page
+    .getByLabel('Label filter', { exact: true })
+    .selectOption({ label: 'Customer' })
+  await page.getByRole('button', { name: 'Manage labels', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Edit label Customer', exact: true })
+    .click()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Delete label', exact: true }).click()
+  await page.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(task.getByText('Customer', { exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('Label filter', { exact: true })).toHaveValue('')
+  await expect(
+    page.getByRole('button', { name: 'Open task Other task' }),
+  ).toBeVisible()
 })

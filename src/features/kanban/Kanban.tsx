@@ -27,6 +27,8 @@ import { Editor } from './Editor'
 import type { EditorState } from './Editor'
 import { CardContent, KanbanColumn } from './KanbanColumn'
 import { useBoard } from './useBoard'
+import { Labels } from './Labels'
+import { emptyTaskFilters, filterTasks } from '../../domain/task-filters'
 
 const collisionDetection: CollisionDetection = (args) => {
   const columnDrag = args.active.data.current?.kind === 'column'
@@ -66,6 +68,8 @@ export function Kanban({
   const [reducedMotion, setReducedMotion] = useState(
     () => matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
+  const [manageLabels, setManageLabels] = useState(false)
+  const [filters, setFilters] = useState(emptyTaskFilters)
   const [showArchived, setShowArchived] = useState(false)
   const returnFocus = useRef<HTMLElement | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
@@ -91,6 +95,7 @@ export function Kanban({
   }
   function closeEditor() {
     setEditor(null)
+    setManageLabels(false)
     requestAnimationFrame(() => {
       const target = returnFocus.current
       if (target?.isConnected) target.focus()
@@ -130,8 +135,27 @@ export function Kanban({
   const snapshot = query.data
   const { board, columns, cards } = snapshot
   const disabled =
-    mutation.isPending || Boolean(board.archived_at) || Boolean(editor)
-  const visibleCards = cards.filter((card) => !card.archived_at)
+    mutation.isPending ||
+    Boolean(board.archived_at) ||
+    Boolean(editor) ||
+    manageLabels
+  // A deleted label cannot leave an invisible active filter behind.
+  const labelId = snapshot.labels.some((label) => label.id === filters.labelId)
+    ? filters.labelId
+    : ''
+  const matchingCards = filterTasks(snapshot, { ...filters, labelId })
+  const visibleCards = matchingCards.filter((card) => !card.archived_at)
+  const filtering = Boolean(
+    filters.search.trim() || labelId || filters.priority || filters.completion,
+  )
+  function labelsForCard(card: Card) {
+    const ids = new Set(
+      snapshot.cardLabels
+        .filter((link) => link.card_id === card.id)
+        .map((link) => link.label_id),
+    )
+    return snapshot.labels.filter((label) => ids.has(label.id))
+  }
   function onDragEnd({ active, over }: DragEndEvent) {
     setDragCard(null)
     setDropTarget(null)
@@ -149,8 +173,10 @@ export function Kanban({
       })
     } else if (source?.kind === 'card' && target?.columnId) {
       let beforeId = target.kind === 'card' ? target.cardId : null
-      const list = visibleCards
-        .filter((card) => card.column_id === target.columnId)
+      const list = cards
+        .filter(
+          (card) => !card.archived_at && card.column_id === target.columnId,
+        )
         .sort((a, b) => a.position - b.position)
       const from = list.findIndex((card) => card.id === source.cardId)
       const to = list.findIndex((card) => card.id === beforeId)
@@ -171,7 +197,7 @@ export function Kanban({
           <Rename
             value={board.title}
             label="Board name"
-            disabled={mutation.isPending || Boolean(editor)}
+            disabled={mutation.isPending || Boolean(editor) || manageLabels}
             onSave={(title) =>
               send(
                 {
@@ -201,8 +227,100 @@ export function Kanban({
         </details>
         {board.archived_at && <span className="quiet-badge">Archived</span>}
       </header>
+      <div
+        className="task-toolbar"
+        role="search"
+        aria-label="Task search and filters"
+      >
+        <label>
+          Search tasks
+          <input
+            type="search"
+            value={filters.search}
+            placeholder="Title or description"
+            onChange={(event) =>
+              setFilters({ ...filters, search: event.target.value })
+            }
+          />
+        </label>
+        <div className="form-field">
+          <label htmlFor="filter-label">Label filter</label>
+          <select
+            id="filter-label"
+            value={labelId}
+            onChange={(event) =>
+              setFilters({ ...filters, labelId: event.target.value })
+            }
+          >
+            <option value="">All labels</option>
+            {snapshot.labels.map((label) => (
+              <option key={label.id} value={label.id}>
+                {label.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label htmlFor="filter-priority">Priority filter</label>
+          <select
+            id="filter-priority"
+            value={filters.priority}
+            onChange={(event) =>
+              setFilters({ ...filters, priority: event.target.value })
+            }
+          >
+            <option value="">All priorities</option>
+            {['none', 'low', 'medium', 'high', 'urgent'].map((value) => (
+              <option key={value} value={value}>
+                {value === 'none'
+                  ? 'No priority'
+                  : value.charAt(0).toUpperCase() + value.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label htmlFor="filter-completion">Completion filter</label>
+          <select
+            id="filter-completion"
+            value={filters.completion}
+            onChange={(event) =>
+              setFilters({ ...filters, completion: event.target.value })
+            }
+          >
+            <option value="">All tasks</option>
+            <option value="incomplete">Incomplete</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        {filtering && (
+          <button
+            className="button-secondary"
+            onClick={() => setFilters(emptyTaskFilters)}
+          >
+            Clear filters
+          </button>
+        )}
+        <button
+          className="button-secondary"
+          disabled={disabled}
+          onClick={() => {
+            returnFocus.current = document.activeElement as HTMLElement
+            mutation.reset()
+            setManageLabels(true)
+          }}
+        >
+          Manage labels
+        </button>
+        {filtering && (
+          <span className="muted" aria-live="polite">
+            {visibleCards.length} of{' '}
+            {cards.filter((card) => !card.archived_at).length} tasks
+          </span>
+        )}
+      </div>
       <div className="board-canvas" data-background={board.background}>
-        {mutation.error && !editor && (
+        {mutation.error && !editor && !manageLabels && (
           <div role="alert" className="error">
             {mutation.error.message}
           </div>
@@ -221,6 +339,21 @@ export function Kanban({
         {mutation.isPending && (
           <p role="status" className="save-status">
             Saving changes…
+          </p>
+        )}
+        {manageLabels && (
+          <Labels
+            snapshot={snapshot}
+            pending={mutation.isPending}
+            error={mutation.error}
+            onSubmit={send}
+            onClose={closeEditor}
+            onReset={() => mutation.reset()}
+          />
+        )}
+        {filtering && !visibleCards.length && (
+          <p className="preview-note">
+            No tasks match your search and filters.
           </p>
         )}
         {editor && (
@@ -305,6 +438,7 @@ export function Kanban({
                 <KanbanColumn
                   key={column.id}
                   column={column}
+                  labelsForCard={labelsForCard}
                   dragging={Boolean(dragCard)}
                   dropTarget={dropTarget}
                   cards={visibleCards
@@ -373,7 +507,7 @@ export function Kanban({
           >
             {dragCard && (
               <div className="task-card drag-preview" aria-hidden="true">
-                <CardContent card={dragCard} />
+                <CardContent card={dragCard} labels={labelsForCard(dragCard)} />
               </div>
             )}
           </DragOverlay>
@@ -389,11 +523,12 @@ export function Kanban({
             aria-expanded={showArchived}
             onClick={() => setShowArchived(!showArchived)}
           >
-            Archived tasks ({cards.filter((card) => card.archived_at).length})
+            Archived tasks (
+            {matchingCards.filter((card) => card.archived_at).length})
           </button>
           {showArchived && (
             <ul className="board-list">
-              {cards
+              {matchingCards
                 .filter((card) => card.archived_at)
                 .map((card) => (
                   <li key={card.id}>

@@ -29,7 +29,13 @@ export async function getBoardSnapshot(
 ): Promise<BoardSnapshot> {
   const data = await rpc('get_board_snapshot', { p_board_id: boardId })
   if (!data) throw new Error('Board unavailable. It may have been deleted.')
-  return data as unknown as BoardSnapshot
+  const snapshot = data as unknown as BoardSnapshot
+  // Keep boards readable while the frontend and labels migration roll out.
+  return {
+    ...snapshot,
+    labels: snapshot.labels ?? [],
+    cardLabels: snapshot.cardLabels ?? [],
+  }
 }
 export async function createBoard(title: string): Promise<string> {
   return (await rpc('create_board', { p_title: title })) as string
@@ -48,6 +54,21 @@ export async function executeCommand(
         p_archived: command.archived,
         p_background: command.background ?? null,
       })
+    case 'createLabel':
+      return rpc('create_label', {
+        ...args,
+        p_name: command.name,
+        p_color: command.color,
+      })
+    case 'saveLabel':
+      return rpc('save_label', {
+        ...args,
+        p_label_id: command.id,
+        p_name: command.name,
+        p_color: command.color,
+      })
+    case 'deleteLabel':
+      return rpc('delete_label', { ...args, p_label_id: command.id })
     case 'deleteBoard':
       return rpc('delete_board', args)
     case 'createColumn':
@@ -74,6 +95,7 @@ export async function executeCommand(
         p_description: command.fields.description,
         p_due_date: command.fields.due_date,
         p_priority: command.fields.priority,
+        p_label_ids: command.labelIds ?? null,
       })
     case 'saveCard':
       return rpc('save_card', {
@@ -83,6 +105,7 @@ export async function executeCommand(
         p_description: command.fields.description,
         p_due_date: command.fields.due_date,
         p_priority: command.fields.priority,
+        p_label_ids: command.labelIds ?? null,
         p_completed: Boolean(command.fields.completed_at),
         p_archived: Boolean(command.fields.archived_at),
       })
