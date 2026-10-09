@@ -52,6 +52,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!supabase) return
     setError(null)
     try {
+      const link = new URLSearchParams(window.location.search).get('share')
+      if (link) sessionStorage.setItem('ergon-share-return', link)
+      else sessionStorage.removeItem('ergon-share-return')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: { redirectTo: window.location.origin },

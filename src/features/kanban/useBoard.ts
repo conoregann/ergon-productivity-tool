@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { applyCommand } from '../../domain/kanban'
 import type { BoardSnapshot, Command } from '../../domain/kanban'
 import { executeCommand, getBoardSnapshot } from './api'
+import { shareToken } from '../../lib/supabase'
 
 export function useBoard(ownerId: string, boardId: string) {
   const cache = useQueryClient()
@@ -9,6 +10,7 @@ export function useBoard(ownerId: string, boardId: string) {
   const query = useQuery({
     queryKey: key,
     queryFn: () => getBoardSnapshot(boardId),
+    refetchInterval: shareToken ? 15000 : false,
   })
   const mutation = useMutation({
     mutationFn: ({ command, version }: { command: Command; version: number }) =>

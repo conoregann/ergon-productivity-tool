@@ -2148,3 +2148,18 @@ fieldset {
     grid-template-columns: repeat(4, 40px);
   }
 }
+
+.sharing-content {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.sharing-content label {
+  display: grid;
+  gap: 0.5rem;
+}
+.sharing-content input,
+.sharing-content select {
+  width: 100%;
+  min-width: 0;
+}

@@ -122,3 +122,20 @@ it('reports restoration failure without leaving an indefinite loading screen', a
     'Unable to restore your session',
   )
 })
+
+it('preserves a shared board through sign-in while keeping the origin callback', async () => {
+  window.history.replaceState(null, '', '/?share=editor-link')
+  try {
+    mount()
+    await screen.findByText('ready')
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+    expect(sessionStorage.getItem('ergon-share-return')).toBe('editor-link')
+    expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'github',
+      options: { redirectTo: window.location.origin },
+    })
+  } finally {
+    window.history.replaceState(null, '', '/')
+    sessionStorage.clear()
+  }
+})

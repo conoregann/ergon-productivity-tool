@@ -7,6 +7,7 @@ export type Card = Tables['cards']['Row']
 export type Label = Tables['labels']['Row']
 export type CardLabel = Tables['card_labels']['Row']
 export type BoardSnapshot = {
+  access?: 'viewer' | 'editor'
   board: Board
   columns: Column[]
   cards: Card[]

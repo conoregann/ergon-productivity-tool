@@ -23,6 +23,8 @@ const Timetable = lazy(() =>
   })),
 )
 import { CalendarDays } from 'lucide-react'
+import { shareToken } from '../lib/supabase'
+import { SharedBoard } from '../features/boards/SharedBoard'
 
 function Workspace() {
   const { session, signOut } = useAuth()
@@ -266,6 +268,7 @@ function Workspace() {
 }
 
 export function App() {
+  if (shareToken) return <SharedBoard />
   return (
     <AuthGate>
       <Workspace />

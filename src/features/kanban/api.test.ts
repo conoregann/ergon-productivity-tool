@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 import { getBoardSnapshot } from './api'
 
 const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }))
-vi.mock('../../lib/supabase', () => ({ supabase: { rpc } }))
+vi.mock('../../lib/supabase', () => ({ supabase: { rpc }, shareToken: null }))
 
 it('normalizes snapshots from before the labels migration so boards remain readable', async () => {
   const snapshot = { board: { id: 'board' }, columns: [], cards: [] }

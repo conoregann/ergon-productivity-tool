@@ -30,6 +30,8 @@ import { CardContent, KanbanColumn } from './KanbanColumn'
 import { useBoard } from './useBoard'
 import { Labels } from './Labels'
 import { emptyTaskFilters, filterTasks } from '../../domain/task-filters'
+import { Sharing } from '../boards/Sharing'
+import { BoardViewer } from './BoardViewer'
 
 const collisionDetection: CollisionDetection = (args) => {
   const columnDrag = args.active.data.current?.kind === 'column'
@@ -56,6 +58,8 @@ export function Kanban({
   onBack,
   onTimetable,
   sidebarControl,
+  readOnly = false,
+  shared = false,
 }: {
   ownerId: string
   boardId: string
@@ -63,6 +67,8 @@ export function Kanban({
   onTimetable: () => void
   onBack: () => void
   sidebarControl: ReactNode
+  readOnly?: boolean
+  shared?: boolean
 }) {
   const { query, mutation } = useBoard(ownerId, boardId)
   const [editor, setEditor] = useState<EditorState | null>(null)
@@ -126,7 +132,7 @@ export function Kanban({
   function act(command: Command) {
     if (query.data) void send(command, query.data.board.version).catch(() => {})
   }
-  if (!query.data)
+  if (!query.data || (shared && query.isError))
     return (
       <section className="live-board" aria-labelledby="live-board-heading">
         <header className="workspace-header board-header">
@@ -151,6 +157,9 @@ export function Kanban({
     )
   const snapshot = query.data
   const { board, columns, cards } = snapshot
+  const isOwner = board.owner_id === ownerId
+  if (readOnly)
+    return <BoardViewer snapshot={snapshot} sidebarControl={sidebarControl} />
   const disabled =
     mutation.isPending ||
     Boolean(board.archived_at) ||
@@ -213,7 +222,9 @@ export function Kanban({
           <Rename
             value={board.title}
             label="Board name"
-            disabled={mutation.isPending || Boolean(editor) || manageLabels}
+            disabled={
+              !isOwner || mutation.isPending || Boolean(editor) || manageLabels
+            }
             onSave={(title) =>
               send(
                 {
@@ -227,14 +238,16 @@ export function Kanban({
           />
         </h1>
         {board.archived_at && <span className="quiet-badge">Archived</span>}
-        <button
-          className="button-secondary board-tool"
-          aria-label="Board timetable"
-          title="Board timetable"
-          onClick={onTimetable}
-        >
-          <CalendarDays aria-hidden="true" />
-        </button>
+        {!shared && (
+          <button
+            className="button-secondary board-tool"
+            aria-label="Board timetable"
+            title="Board timetable"
+            onClick={onTimetable}
+          >
+            <CalendarDays aria-hidden="true" />
+          </button>
+        )}
         <BoardFilters
           value={{ ...filters, labelId }}
           labels={snapshot.labels}
@@ -255,15 +268,20 @@ export function Kanban({
         >
           <Tags aria-hidden="true" />
         </button>
-        <button
-          className="button-secondary board-tool"
-          aria-label="Board settings"
-          title="Board settings"
-          disabled={mutation.isPending}
-          onClick={() => openEditor({ kind: 'board', version: board.version })}
-        >
-          <Settings aria-hidden="true" />
-        </button>
+        {isOwner && <Sharing board={board} onSaved={() => query.refetch()} />}
+        {isOwner && (
+          <button
+            className="button-secondary board-tool"
+            aria-label="Board settings"
+            title="Board settings"
+            disabled={mutation.isPending}
+            onClick={() =>
+              openEditor({ kind: 'board', version: board.version })
+            }
+          >
+            <Settings aria-hidden="true" />
+          </button>
+        )}
         {filtering && (
           <span className="muted board-filter-status" aria-live="polite">
             {visibleCards.length} of{' '}

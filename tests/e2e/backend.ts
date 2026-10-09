@@ -12,6 +12,10 @@ export async function installBackend(page: Page) {
   }
   const boards = new Map<string, BoardSnapshot>()
   const sessions = new Map<string, Session>()
+  const shares = new Map<
+    string,
+    { board_id: string; token: string; access: string }
+  >()
   let preferences: Preferences | null = null
   const control = {
     failNext: false,
@@ -81,8 +85,22 @@ export async function installBackend(page: Page) {
     if (path === '/auth/v1/logout') return respond({})
     if (path === '/rest/v1/boards')
       return respond([...boards.values()].map((snapshot) => snapshot.board))
+    if (path === '/rest/v1/board_shares') {
+      const boardId = new URL(route.request().url()).searchParams
+        .get('board_id')
+        ?.replace('eq.', '')
+      return respond(shares.get(boardId ?? '') ?? null)
+    }
     const name = path.split('/').at(-1)
     const args = route.request().postDataJSON() as Record<string, unknown>
+    if (name === 'get_shared_board') {
+      const share = [...shares.values()].find(
+        (share) => share.token === route.request().headers()['x-board-share'],
+      )
+      return respond(
+        share ? { ...boards.get(share.board_id), access: share.access } : null,
+      )
+    }
     if (name === 'create_board') {
       const id = crypto.randomUUID()
       boards.set(id, {
@@ -206,6 +224,17 @@ export async function installBackend(page: Page) {
     }
     if (args.p_version !== snapshot.board.version)
       return respond({ code: 'PT409', message: 'Board changed' }, 409)
+    if (name === 'set_board_sharing') {
+      if (args.p_access === null) shares.delete(snapshot.board.id)
+      else
+        shares.set(snapshot.board.id, {
+          board_id: snapshot.board.id,
+          token: shares.get(snapshot.board.id)?.token ?? crypto.randomUUID(),
+          access: String(args.p_access),
+        })
+      snapshot.board.version++
+      return respond(shares.get(snapshot.board.id) ?? null)
+    }
     let result: unknown = null
     const columnId = String(args.p_column_id)
     const cardId = String(args.p_card_id)
@@ -334,5 +363,5 @@ export async function installBackend(page: Page) {
     snapshot.board.version++
     return respond(result)
   })
-  return Object.assign(control, { seed: { boards, sessions } })
+  return Object.assign(control, { seed: { boards, sessions, shares } })
 }

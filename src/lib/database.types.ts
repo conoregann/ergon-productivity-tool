@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      board_shares: {
+        Row: {
+          board_id: string
+          token: string
+          access: string
+        }
+        Insert: {
+          board_id: string
+          token?: string
+          access: string
+        }
+        Update: {
+          board_id?: string
+          token?: string
+          access?: string
+        }
+        Relationships: []
+      }
       boards: {
         Row: {
           id: string
@@ -344,6 +362,7 @@ export type Database = {
         Returns: Json
       }
       get_scheduling_snapshot: { Args: {}; Returns: Json }
+      get_shared_board: { Args: {}; Returns: Json }
       import_workspace: {
         Args: {
           p_data: Json | null
@@ -431,6 +450,14 @@ export type Database = {
           p_ends_at: string | null
         }
         Returns: undefined
+      }
+      set_board_sharing: {
+        Args: {
+          p_board_id: string | null
+          p_version: number | null
+          p_access: string | null
+        }
+        Returns: Json
       }
     }
     Enums: { [_ in never]: never }

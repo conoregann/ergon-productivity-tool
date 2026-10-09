@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase'
+import { shareToken, supabase } from '../../lib/supabase'
 import type { Database } from '../../lib/database.types'
 import type { BoardSnapshot, Command } from '../../domain/kanban'
 
@@ -27,7 +27,9 @@ async function rpc<N extends keyof Functions>(
 export async function getBoardSnapshot(
   boardId: string,
 ): Promise<BoardSnapshot> {
-  const data = await rpc('get_board_snapshot', { p_board_id: boardId })
+  const data = shareToken
+    ? await rpc('get_shared_board', {})
+    : await rpc('get_board_snapshot', { p_board_id: boardId })
   if (!data) throw new Error('Board unavailable. It may have been deleted.')
   const snapshot = data as unknown as BoardSnapshot
   // Keep boards readable while the frontend and labels migration roll out.
