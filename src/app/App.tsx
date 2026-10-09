@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Archive,
@@ -17,12 +17,19 @@ import { Boards } from '../features/boards/Boards'
 import { listBoards } from '../features/boards/api'
 import { Portability } from '../features/portability/Portability'
 import { Kanban } from '../features/kanban/Kanban'
+const Timetable = lazy(() =>
+  import('../features/timetable/Timetable').then((module) => ({
+    default: module.Timetable,
+  })),
+)
+import { CalendarDays } from 'lucide-react'
 
 function Workspace() {
   const { session, signOut } = useAuth()
   const ownerId = session!.user.id
   const [selected, setSelected] = useState<string | null>(null)
   const [archived, setArchived] = useState(false)
+  const [timetable, setTimetable] = useState(false)
   const [boardsOpen, setBoardsOpen] = useState(true)
   const [collapsed, setCollapsed] = useState(() => window.innerWidth < 760)
   const [pending, setPending] = useState(false)
@@ -48,6 +55,7 @@ function Workspace() {
   }, [dark])
   function overview(showArchived = false) {
     setSelected(null)
+    setTimetable(false)
     setArchived(showArchived)
   }
   async function logout() {
@@ -94,7 +102,9 @@ function Workspace() {
             <button
               className="nav-item"
               aria-label="Boards"
-              aria-current={!selected && !archived ? 'page' : undefined}
+              aria-current={
+                !selected && !archived && !timetable ? 'page' : undefined
+              }
               onClick={() => overview()}
             >
               <Columns3 aria-hidden="true" />
@@ -124,7 +134,10 @@ function Workspace() {
                     className="sidebar-board"
                     key={board.id}
                     aria-current={selected === board.id ? 'page' : undefined}
-                    onClick={() => setSelected(board.id)}
+                    onClick={() => {
+                      setTimetable(false)
+                      setSelected(board.id)
+                    }}
                   >
                     {board.title}
                   </button>
@@ -132,9 +145,23 @@ function Workspace() {
             </div>
           )}
           <button
+            className="nav-item"
+            aria-label="Timetable"
+            aria-current={timetable ? 'page' : undefined}
+            onClick={() => {
+              setSelected(null)
+              setTimetable(true)
+            }}
+          >
+            <CalendarDays aria-hidden="true" />
+            <span className="sidebar-label">Timetable</span>
+          </button>
+          <button
             className="nav-item archive-nav"
             aria-label="Archived boards"
-            aria-current={!selected && archived ? 'page' : undefined}
+            aria-current={
+              !selected && archived && !timetable ? 'page' : undefined
+            }
             onClick={() => overview(true)}
           >
             <Archive aria-hidden="true" />
@@ -183,10 +210,14 @@ function Workspace() {
       </aside>
       <main
         id="workspace"
-        className={`workspace ${selected ? 'board-workspace' : ''}`}
+        className={`workspace ${selected || timetable ? 'board-workspace' : ''}`}
         tabIndex={-1}
       >
-        {selected ? (
+        {timetable ? (
+          <Suspense fallback={<p role="status">Loading timetable…</p>}>
+            <Timetable ownerId={ownerId} sidebarControl={sidebarControl} />
+          </Suspense>
+        ) : selected ? (
           <Kanban
             key={selected}
             ownerId={ownerId}

@@ -1385,6 +1385,130 @@ fieldset {
   display: none;
 }
 
+.timetable-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+.unscheduled-panel {
+  padding: 20px 16px;
+  border-right: 1px solid var(--line);
+  overflow: auto;
+  background: var(--surface);
+}
+.unscheduled-panel h2,
+.timetable-toolbar h2 {
+  font-size: 15px;
+  margin: 0;
+}
+.unscheduled-panel p,
+.timetable-timezone,
+.scheduling-task span {
+  font-size: 12px;
+}
+.scheduling-tasks {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.scheduling-task {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  text-align: left;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: grab;
+}
+.scheduling-task span {
+  color: var(--muted);
+}
+.timetable-calendar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: var(--canvas);
+  --fc-neutral-bg-color: var(--surface);
+  --fc-list-event-hover-bg-color: var(--hover);
+  --fc-today-bg-color: var(--surface);
+  --fc-event-bg-color: var(--strong);
+  --fc-event-border-color: var(--strong);
+  --fc-event-text-color: var(--on-strong);
+}
+.timetable-toolbar,
+.timetable-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timetable-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.timetable-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.timetable-toolbar select {
+  width: auto;
+}
+.timetable-timezone {
+  margin: 10px 0 0;
+}
+.timetable-notice {
+  font-size: 12px;
+  min-height: 18px;
+  margin: 4px 0;
+}
+.timetable-calendar .fc {
+  flex: 1;
+  min-height: 0;
+  font-size: 12px;
+}
+.timetable-calendar .fc-event {
+  cursor: pointer;
+}
+.timetable-calendar .session-completed {
+  opacity: 0.65;
+}
+.timetable-calendar .fc-event:focus-visible {
+  outline: 2px solid var(--completion);
+  outline-offset: 2px;
+}
+@media (max-width: 759px) {
+  .timetable-layout {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+  .unscheduled-panel {
+    max-height: 220px;
+    flex-shrink: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .timetable-calendar {
+    min-height: 600px;
+    flex-shrink: 0;
+    padding: 12px;
+  }
+  .timetable-toolbar h2 {
+    order: 3;
+    width: 100%;
+  }
+}
+
 .task-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1464,4 +1588,16 @@ fieldset {
     flex: 1 1 calc(50% - 8px);
     max-width: none;
   }
+}
+
+.workspace-header:has(+ .timetable-layout) h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.unscheduled-panel .check-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }

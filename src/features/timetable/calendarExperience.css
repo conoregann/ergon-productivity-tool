@@ -1,0 +1,112 @@
+.calendar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.calendar-filters label {
+  margin: 0;
+  min-width: 150px;
+  flex: 1;
+}
+.calendar-filters select {
+  width: 100%;
+}
+.calendar-agenda {
+  min-width: 0;
+}
+.agenda-day {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.agenda-day h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+.agenda-entry {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: start;
+  text-align: left;
+  background: var(--panel);
+  color: var(--text);
+  border: 0;
+  border-left: 3px solid var(--input-line);
+  border-radius: 0;
+  margin: 8px 0;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+}
+.agenda-entry strong {
+  flex-basis: 100%;
+}
+.deadline-entry {
+  border-left-style: dashed;
+}
+.calendar-completed {
+  color: var(--completion);
+}
+.session-completed {
+  border-left-color: var(--completion);
+}
+.calendar-overlap {
+  color: var(--destructive);
+  font-weight: 600;
+}
+.calendar-help {
+  color: var(--muted);
+  font-size: 13px;
+}
+.timetable-calendar {
+  --fc-classic-border: var(--line);
+  --fc-classic-strong-border: var(--input-line);
+  --fc-classic-background: var(--canvas);
+  --fc-classic-faint: var(--surface);
+  --fc-classic-muted: var(--hover);
+  --fc-classic-foreground: var(--text);
+  --fc-classic-muted-foreground: var(--muted);
+  --fc-classic-event: var(--strong);
+  --fc-classic-event-contrast: var(--on-strong);
+  --fc-classic-today: var(--surface);
+  --fc-classic-now: var(--destructive);
+}
+.calendar-grid {
+  flex: 1;
+  min-height: 440px;
+}
+.calendar-grid > div {
+  font-size: 12px;
+}
+.timetable-calendar .calendar-deadline {
+  --fc-classic-event: var(--surface);
+  --fc-classic-event-contrast: var(--text);
+  border-style: dashed;
+}
+.timetable-calendar .session-completed {
+  --fc-classic-event: var(--completion-soft);
+  --fc-classic-event-contrast: var(--completion);
+  opacity: 1;
+}
+.calendar-session:focus-visible,
+.calendar-deadline:focus-visible {
+  outline: 2px solid var(--completion);
+  outline-offset: 2px;
+}
+.calendar-preferences-button {
+  align-self: start;
+  margin-bottom: 12px;
+}
+.timetable-calendar .calendar-agenda {
+  overflow: auto;
+  flex: 1;
+}
+@media (max-width: 760px) {
+  .calendar-filters label {
+    min-width: 120px;
+  }
+  .calendar-filters {
+    gap: 8px;
+  }
+}
