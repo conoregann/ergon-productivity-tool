@@ -1,0 +1,10 @@
+.portability-content {
+  display: grid;
+  gap: 16px;
+}
+.portability-content p {
+  margin: 0;
+}
+.portability-content > button {
+  justify-self: start;
+}

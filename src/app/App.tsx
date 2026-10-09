@@ -15,6 +15,7 @@ import { AuthGate } from '../features/auth/AuthGate'
 import { useAuth } from '../features/auth/auth-context'
 import { Boards } from '../features/boards/Boards'
 import { listBoards } from '../features/boards/api'
+import { Portability } from '../features/portability/Portability'
 import { Kanban } from '../features/kanban/Kanban'
 
 function Workspace() {
@@ -141,6 +142,7 @@ function Workspace() {
           </button>
         </nav>
         <div className="sidebar-account">
+          <Portability ownerId={ownerId} />
           <button
             className="signout-button"
             onClick={() => setDark(!dark)}
