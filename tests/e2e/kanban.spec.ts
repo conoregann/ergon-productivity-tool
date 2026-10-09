@@ -39,7 +39,6 @@ async function overview(page: Page) {
   await page.getByRole('button', { name: 'Boards', exact: true }).click()
 }
 async function boardSettings(page: Page) {
-  await page.getByLabel('Board options', { exact: true }).click()
   await page
     .getByRole('button', { name: 'Board settings', exact: true })
     .click()
@@ -204,7 +203,7 @@ test('edits in a centred dialog, persists placement and priorities, and restores
     .click()
   await page.getByRole('button', { name: 'Open task Prepare proposal' }).click()
   await page.getByLabel('Priority', { exact: true }).selectOption('urgent')
-  await page.getByLabel('Completed', { exact: true }).check()
+  await page.getByRole('checkbox', { name: 'Completed', exact: true }).check()
   await page.getByLabel('Archived', { exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -611,6 +610,41 @@ test('chooses deadlines with a keyboard calendar, preserves date-only values, an
   await createWorkspace(page)
   await page.getByRole('button', { name: 'Open task Prepare proposal' }).click()
   await page.getByLabel('Due time', { exact: true }).fill('14:35')
+  await page.getByRole('button', { name: 'Adjust due time' }).click()
+  const hourSlider = page.getByRole('slider', { name: 'Hour', exact: true })
+  await hourSlider.focus()
+  await hourSlider.press('ArrowRight')
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue(
+    '15:35',
+  )
+  await hourSlider.press('Home')
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue(
+    '00:35',
+  )
+  const minuteSlider = page.getByRole('slider', { name: 'Minute', exact: true })
+  await minuteSlider.focus()
+  await minuteSlider.press('End')
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue(
+    '00:59',
+  )
+  await page.screenshot({
+    path: testInfo.outputPath('due-time-sliders.png'),
+    fullPage: true,
+  })
+  await page.getByRole('button', { name: 'Clear due time' }).click()
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue('')
+  await minuteSlider.press('ArrowRight')
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue(
+    '09:01',
+  )
+  await minuteSlider.press('Escape')
+  await expect(
+    page.getByRole('button', { name: 'Adjust due time' }),
+  ).toBeFocused()
+  await expect(
+    page.getByRole('group', { name: 'Due time controls' }),
+  ).toHaveCount(0)
+  await page.getByLabel('Due time', { exact: true }).fill('14:35')
   await page.getByRole('button', { name: 'Choose due date' }).click()
   const selected = page.locator('[data-date="2026-10-09"]')
   await expect(selected).toBeFocused()
@@ -764,9 +798,30 @@ test('manages labels and combines search, label, priority and completion filters
 }, testInfo) => {
   const backend = await installBackend(page)
   await createWorkspace(page)
+  const header = page.locator('.board-header')
+  for (const name of ['Filters', 'Manage labels', 'Board settings']) {
+    const control = header.getByRole('button', { name, exact: true })
+    await expect(control).toBeVisible()
+    await expect(control).toHaveText('')
+    const bounds = await control.boundingBox()
+    expect(bounds?.width).toBe(40)
+    expect(bounds?.height).toBe(40)
+  }
+  await page.screenshot({
+    path: testInfo.outputPath('board-toolbar.png'),
+    fullPage: true,
+  })
   await page.getByRole('button', { name: 'Manage labels', exact: true }).click()
   await page.getByRole('button', { name: 'New label', exact: true }).click()
   await page.getByLabel('Label name', { exact: true }).fill('Client')
+  await page.getByRole('radio', { name: 'Blue', exact: true }).check()
+  await expect(page.getByLabel('Label colour', { exact: true })).toHaveValue(
+    '#345da5',
+  )
+  await page.screenshot({
+    path: testInfo.outputPath('label-editor.png'),
+    fullPage: true,
+  })
   await page.getByLabel('Label colour').fill('#125abc')
   backend.failNext = true
   await page.getByRole('button', { name: 'Save label', exact: true }).click()
@@ -777,6 +832,10 @@ test('manages labels and combines search, label, priority and completion filters
     'Client',
   )
   await page.getByRole('button', { name: 'Save label', exact: true }).click()
+  await page.screenshot({
+    path: testInfo.outputPath('label-manager.png'),
+    fullPage: true,
+  })
   await page.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Manage labels', exact: true }),
@@ -789,6 +848,10 @@ test('manages labels and combines search, label, priority and completion filters
   await labelCheckbox.focus()
   await labelCheckbox.press('Space')
   await expect(labelCheckbox).toBeChecked()
+  await page.screenshot({
+    path: testInfo.outputPath('task-label-choices.png'),
+    fullPage: true,
+  })
   await page.getByRole('checkbox', { name: 'Completed', exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   const task = page.getByRole('button', { name: 'Open task Prepare proposal' })
@@ -803,6 +866,7 @@ test('manages labels and combines search, label, priority and completion filters
   await expect(filters).toHaveAttribute('aria-expanded', 'false')
   await filters.focus()
   await filters.press('Enter')
+  await expect(page.getByLabel('Search tasks', { exact: true })).toBeFocused()
   await page.getByLabel('Search tasks', { exact: true }).fill(' DELIVERABLES ')
   await expect(page.getByLabel('Search tasks', { exact: true })).toHaveValue(
     ' DELIVERABLES ',
@@ -810,18 +874,24 @@ test('manages labels and combines search, label, priority and completion filters
   await expect(
     page.getByRole('button', { name: 'Open task Other task' }),
   ).toHaveCount(0)
-  await page
-    .getByLabel('Label filter', { exact: true })
-    .selectOption({ label: 'Client' })
-  await page.getByLabel('Priority filter', { exact: true }).selectOption('high')
-  await page
-    .getByLabel('Completion filter', { exact: true })
-    .selectOption('completed')
+  await page.getByRole('radio', { name: 'Client', exact: true }).check()
+  const highPriority = page.getByRole('radio', { name: 'High', exact: true })
+  await highPriority.check()
+  await highPriority.focus()
+  await highPriority.press('ArrowRight')
+  await expect(
+    page.getByRole('radio', { name: 'Urgent', exact: true }),
+  ).toBeChecked()
+  await page.keyboard.press('ArrowLeft')
+  await expect(highPriority).toBeChecked()
+  await page.getByRole('radio', { name: 'Completed', exact: true }).check()
   await expect(page.getByLabel('Search tasks', { exact: true })).toHaveValue(
     ' DELIVERABLES ',
   )
   await expect(filters).toContainText('4')
-  await page.getByLabel('Completion filter', { exact: true }).press('Escape')
+  await page
+    .getByRole('radio', { name: 'Completed', exact: true })
+    .press('Escape')
   await expect(filters).toBeFocused()
   await expect(filters).toHaveAttribute('aria-expanded', 'false')
   await expect(task).toBeVisible()
@@ -838,9 +908,7 @@ test('manages labels and combines search, label, priority and completion filters
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true)
-  await page
-    .getByLabel('Completion filter', { exact: true })
-    .selectOption('incomplete')
+  await page.getByRole('radio', { name: 'Incomplete', exact: true }).check()
   await expect(
     page.getByText('No tasks match your search and filters.'),
   ).toBeVisible()
@@ -884,9 +952,7 @@ test('manages labels and combines search, label, priority and completion filters
   await page.getByRole('checkbox', { name: 'Customer', exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await page.getByRole('button', { name: /^Filters/ }).click()
-  await page
-    .getByLabel('Label filter', { exact: true })
-    .selectOption({ label: 'Customer' })
+  await page.getByRole('radio', { name: 'Customer', exact: true }).check()
   await page.getByRole('button', { name: 'Manage labels', exact: true }).click()
   await page
     .getByRole('button', { name: 'Edit label Customer', exact: true })
@@ -895,7 +961,14 @@ test('manages labels and combines search, label, priority and completion filters
   await page.getByRole('button', { name: 'Delete label', exact: true }).click()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(task.getByText('Customer', { exact: true })).toHaveCount(0)
-  await expect(page.getByLabel('Label filter', { exact: true })).toHaveValue('')
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  await expect(
+    page.getByRole('radio', { name: 'All labels', exact: true }),
+  ).toBeChecked()
+  await page.getByRole('button', { name: 'Close filters', exact: true }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'Task filters' }),
+  ).not.toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Open task Other task' }),
   ).toBeVisible()

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Dialog } from '../../app/Dialog'
 import { DatePicker } from './DatePicker'
+import { DueTime } from './DueTime'
 import { boardBackgrounds } from './appearance'
 import type { BoardSnapshot, Card, Column, Command } from '../../domain/kanban'
 
@@ -321,15 +322,32 @@ export function Editor({
                     <option value="urgent">Urgent</option>
                   </select>
                 </div>
-                <div
-                  className="label-assignment"
-                  role="group"
-                  aria-label="Task labels"
-                >
-                  <span>Labels</span>
-                  {snapshot.labels.length ? (
-                    snapshot.labels.map((label) => (
-                      <label className="checkbox-label" key={label.id}>
+                <DatePicker
+                  value={deadline}
+                  onChange={(value) => {
+                    setDeadline(value)
+                    if (!value) setDueTime('')
+                  }}
+                />
+                <DueTime
+                  value={dueTime}
+                  disabled={!deadline}
+                  onChange={setDueTime}
+                />
+              </div>
+              <div
+                className="label-assignment"
+                role="group"
+                aria-label="Task labels"
+              >
+                <span className="label-assignment-heading">
+                  Labels{' '}
+                  <span className="muted">{labelIds.length} selected</span>
+                </span>
+                {snapshot.labels.length ? (
+                  <div className="task-label-choices">
+                    {snapshot.labels.map((label) => (
+                      <label className="task-label-choice" key={label.id}>
                         <input
                           type="checkbox"
                           checked={labelIds.includes(label.id)}
@@ -346,32 +364,19 @@ export function Editor({
                           style={{ backgroundColor: label.color }}
                           aria-hidden="true"
                         />
-                        {label.name}
+                        <span>{label.name}</span>
+                        <Check
+                          className="label-choice-check"
+                          aria-hidden="true"
+                        />
                       </label>
-                    ))
-                  ) : (
-                    <p className="muted">
-                      Create labels using Manage labels on the board.
-                    </p>
-                  )}
-                </div>
-                <DatePicker
-                  value={deadline}
-                  onChange={(value) => {
-                    setDeadline(value)
-                    if (!value) setDueTime('')
-                  }}
-                />
-                <label>
-                  Due time
-                  <input
-                    type="time"
-                    value={dueTime}
-                    disabled={!deadline}
-                    step={60}
-                    onChange={(event) => setDueTime(event.target.value)}
-                  />
-                </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted">
+                    Create labels using Manage labels on the board.
+                  </p>
+                )}
               </div>
               {editor.card && (
                 <label className="checkbox-label task-status completion-control">

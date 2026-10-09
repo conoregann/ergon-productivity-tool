@@ -19,8 +19,8 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import type { ReactNode } from 'react'
-import { Plus, MoreHorizontal } from 'lucide-react'
-import { FilterPanel } from '../../app/FilterPanel'
+import { Plus, Settings, Tags } from 'lucide-react'
+import { BoardFilters } from './BoardFilters'
 import { Rename } from '../../app/Rename'
 import type { Board, Card, Column, Command } from '../../domain/kanban'
 import { ConflictError } from './api'
@@ -224,110 +224,18 @@ export function Kanban({
             }
           />
         </h1>
-        <details className="board-options">
-          <summary aria-label="Board options">
-            <MoreHorizontal aria-hidden="true" />
-          </summary>
-          <button
-            className="text-button"
-            disabled={mutation.isPending}
-            onClick={(event) => {
-              event.currentTarget.closest('details')?.removeAttribute('open')
-              openEditor({ kind: 'board', version: board.version })
-            }}
-          >
-            Board settings
-          </button>
-        </details>
         {board.archived_at && <span className="quiet-badge">Archived</span>}
-      </header>
-      <div
-        className="task-toolbar"
-        role="search"
-        aria-label="Task search and filters"
-      >
-        <FilterPanel
-          count={
-            [
-              filters.search.trim(),
-              labelId,
-              filters.priority,
-              filters.completion,
-            ].filter(Boolean).length
-          }
-        >
-          <label>
-            Search tasks
-            <input
-              type="search"
-              value={filters.search}
-              placeholder="Title or description"
-              onChange={(event) =>
-                setFilters({ ...filters, search: event.target.value })
-              }
-            />
-          </label>
-          <div className="form-field">
-            <label htmlFor="filter-label">Label filter</label>
-            <select
-              id="filter-label"
-              value={labelId}
-              onChange={(event) =>
-                setFilters({ ...filters, labelId: event.target.value })
-              }
-            >
-              <option value="">All labels</option>
-              {snapshot.labels.map((label) => (
-                <option key={label.id} value={label.id}>
-                  {label.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field">
-            <label htmlFor="filter-priority">Priority filter</label>
-            <select
-              id="filter-priority"
-              value={filters.priority}
-              onChange={(event) =>
-                setFilters({ ...filters, priority: event.target.value })
-              }
-            >
-              <option value="">All priorities</option>
-              {['none', 'low', 'medium', 'high', 'urgent'].map((value) => (
-                <option key={value} value={value}>
-                  {value === 'none'
-                    ? 'No priority'
-                    : value.charAt(0).toUpperCase() + value.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field">
-            <label htmlFor="filter-completion">Completion filter</label>
-            <select
-              id="filter-completion"
-              value={filters.completion}
-              onChange={(event) =>
-                setFilters({ ...filters, completion: event.target.value })
-              }
-            >
-              <option value="">All tasks</option>
-              <option value="incomplete">Incomplete</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
-          {filtering && (
-            <button
-              className="button-secondary"
-              onClick={() => setFilters(emptyTaskFilters)}
-            >
-              Clear filters
-            </button>
-          )}
-        </FilterPanel>
+        <BoardFilters
+          value={{ ...filters, labelId }}
+          labels={snapshot.labels}
+          visibleCount={visibleCards.length}
+          totalCount={cards.filter((card) => !card.archived_at).length}
+          onChange={setFilters}
+        />
         <button
-          className="button-secondary"
+          className="button-secondary board-tool"
+          aria-label="Manage labels"
+          title="Manage labels"
           disabled={disabled}
           onClick={() => {
             returnFocus.current = document.activeElement as HTMLElement
@@ -335,15 +243,24 @@ export function Kanban({
             setManageLabels(true)
           }}
         >
-          Manage labels
+          <Tags aria-hidden="true" />
+        </button>
+        <button
+          className="button-secondary board-tool"
+          aria-label="Board settings"
+          title="Board settings"
+          disabled={mutation.isPending}
+          onClick={() => openEditor({ kind: 'board', version: board.version })}
+        >
+          <Settings aria-hidden="true" />
         </button>
         {filtering && (
-          <span className="muted" aria-live="polite">
+          <span className="muted board-filter-status" aria-live="polite">
             {visibleCards.length} of{' '}
             {cards.filter((card) => !card.archived_at).length} tasks
           </span>
         )}
-      </div>
+      </header>
       <div className="board-canvas" data-background={board.background}>
         {mutation.error && !editor && !manageLabels && (
           <div role="alert" className="error">
