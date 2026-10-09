@@ -264,6 +264,150 @@ try {
     foreignBackground.error,
     'Foreign board appearance writes must be denied',
   )
+  console.log('Checking hosted sharing links, editor access, and revocation…')
+  const readOwner = async () =>
+    checked(
+      await alice.rpc('get_board_snapshot', { p_board_id: boardId }),
+      'Refresh sharing revision',
+    )
+  const setSharing = async (access) =>
+    checked(
+      await alice.rpc('set_board_sharing', {
+        p_board_id: boardId,
+        p_version: (await readOwner()).board.version,
+        p_access: access,
+      }),
+      'Set sharing access',
+    )
+  const share = await setSharing('viewer')
+  const linkOptions = {
+    ...options,
+    global: { headers: { 'x-board-share': share.token } },
+  }
+  const visitor = createClient(url, publicKey, linkOptions)
+  const shared = checked(
+    await visitor.rpc('get_shared_board'),
+    'Anonymous link read',
+  )
+  assert.equal(shared.board.id, boardId)
+  assert.equal(shared.cards[0].id, cardId)
+  assert.equal(shared.access, 'viewer')
+  assert(
+    !JSON.stringify(shared).includes(share.token),
+    'Snapshots must omit sharing tokens',
+  )
+  const collaborator = createClient(url, publicKey, linkOptions)
+  checked(
+    await collaborator.auth.setSession(
+      checked(await bob.auth.getSession(), 'Get collaborator session').session,
+    ),
+    'Authenticate link collaborator',
+  )
+  const addSharedColumn = () =>
+    collaborator.rpc('create_column', {
+      p_board_id: boardId,
+      p_version: shared.board.version,
+      p_title: 'Collaborator column',
+    })
+  assert((await addSharedColumn()).error, 'Viewer writes must be denied')
+  assert(
+    (
+      await visitor.rpc('create_column', {
+        p_board_id: boardId,
+        p_version: shared.board.version,
+        p_title: 'Anonymous write',
+      })
+    ).error,
+    'Anonymous writes must be denied',
+  )
+  assert.equal((await setSharing('editor')).token, share.token)
+  shared.board.version = (await readOwner()).board.version
+  const sharedColumn = checked(
+    await addSharedColumn(),
+    'Link editor creates a column',
+  )
+  const edited = await readOwner()
+  assert.equal(
+    edited.columns.find((column) => column.id === sharedColumn).owner_id,
+    users[0],
+  )
+  assert(
+    (
+      await collaborator.rpc('delete_board', {
+        p_board_id: boardId,
+        p_version: edited.board.version,
+      })
+    ).error,
+    'Link editors must not delete boards',
+  )
+  assert(
+    (
+      await collaborator.rpc('set_board_sharing', {
+        p_board_id: boardId,
+        p_version: edited.board.version,
+        p_access: null,
+      })
+    ).error,
+    'Link editors must not control sharing',
+  )
+  const privateBoard = checked(
+    await alice.rpc('create_board', { p_title: 'Temporary private board' }),
+    'Create private isolation board',
+  )
+  assert.equal(
+    checked(
+      await collaborator.rpc('get_board_snapshot', {
+        p_board_id: privateBoard,
+      }),
+      'Read unrelated board',
+    ),
+    null,
+  )
+  assert(
+    checked(
+      await collaborator
+        .from('board_shares')
+        .select('*')
+        .eq('board_id', boardId),
+      'Sharing token isolation',
+    ).length === 0,
+  )
+  assert(
+    !checked(
+      await collaborator.rpc('get_scheduling_snapshot'),
+      'Personal calendar isolation',
+    ).sessions.some((session) => session.id === sessionId),
+  )
+  await setSharing('viewer')
+  shared.board.version = (await readOwner()).board.version
+  assert(
+    (await addSharedColumn()).error,
+    'Downgraded editor writes must be denied',
+  )
+  await setSharing(null)
+  assert.equal(
+    checked(await visitor.rpc('get_shared_board'), 'Revoked anonymous read'),
+    null,
+  )
+  assert.equal(
+    checked(
+      await collaborator.rpc('get_board_snapshot', { p_board_id: boardId }),
+      'Revoked authenticated read',
+    ),
+    null,
+  )
+  assert(
+    (await addSharedColumn()).error,
+    'Revoked editor writes must be denied',
+  )
+  assert.notEqual((await setSharing('viewer')).token, share.token)
+  assert.equal(
+    checked(await visitor.rpc('get_shared_board'), 'Old token remains revoked'),
+    null,
+  )
+  console.log(
+    'PASS: hosted viewer/editor sharing, private-board and calendar isolation, downgrade, revocation, and token replacement.',
+  )
   checked(await alice.auth.signOut(), 'Sign out temporary user')
   assert(
     (await alice.from('boards').select('id').eq('id', boardId)).error,
