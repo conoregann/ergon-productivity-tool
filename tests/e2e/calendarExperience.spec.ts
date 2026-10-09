@@ -26,6 +26,7 @@ async function setup(page: Page) {
         priority: 'none',
         position: 0,
         due_date: id === 'work' ? '2026-10-09' : null,
+        due_time: null,
         completed_at: id === 'work' ? '2026-10-08T12:00:00Z' : null,
         archived_at: null,
       },
@@ -102,6 +103,7 @@ test('agenda combines filters, retains hidden overlap warnings, and preserves co
     page.getByRole('button', { name: 'Deadline Proposal history Completed' }),
   ).toBeVisible()
   await expect(home).toBeVisible()
+  await page.getByRole('button', { name: /^Filters/ }).click()
   await page
     .getByRole('combobox', { name: 'Completion', exact: true })
     .selectOption('completed')

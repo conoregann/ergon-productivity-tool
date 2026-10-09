@@ -786,6 +786,10 @@ test('manages labels and combines search, label, priority and completion filters
   await page.getByLabel('Title', { exact: true }).fill('Other task')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  const filters = page.getByRole('button', { name: /^Filters/ })
+  await expect(filters).toHaveAttribute('aria-expanded', 'false')
+  await filters.focus()
+  await filters.press('Enter')
   await page.getByLabel('Search tasks', { exact: true }).fill(' DELIVERABLES ')
   await expect(page.getByLabel('Search tasks', { exact: true })).toHaveValue(
     ' DELIVERABLES ',
@@ -803,7 +807,12 @@ test('manages labels and combines search, label, priority and completion filters
   await expect(page.getByLabel('Search tasks', { exact: true })).toHaveValue(
     ' DELIVERABLES ',
   )
+  await expect(filters).toContainText('4')
+  await page.getByLabel('Completion filter', { exact: true }).press('Escape')
+  await expect(filters).toBeFocused()
+  await expect(filters).toHaveAttribute('aria-expanded', 'false')
   await expect(task).toBeVisible()
+  await filters.press('Enter')
   await expect(
     page.getByRole('button', { name: 'Open task Other task' }),
   ).toHaveCount(0)
@@ -861,6 +870,7 @@ test('manages labels and combines search, label, priority and completion filters
   await task.click()
   await page.getByRole('checkbox', { name: 'Customer', exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: /^Filters/ }).click()
   await page
     .getByLabel('Label filter', { exact: true })
     .selectOption({ label: 'Customer' })

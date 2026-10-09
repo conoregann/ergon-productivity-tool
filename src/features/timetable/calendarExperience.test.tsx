@@ -73,6 +73,10 @@ it('clears a label from another board when switching boards', async () => {
       onChange={onChange}
     />,
   )
+  const toggle = screen.getByRole('button', { name: /Filters/ })
+  expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  toggle.focus()
+  await user.keyboard('{Enter}')
   await user.selectOptions(screen.getByLabelText('Board'), 'home')
   expect(onChange).toHaveBeenCalledWith({
     boardId: 'home',
