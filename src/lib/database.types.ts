@@ -264,6 +264,7 @@ export type Database = {
           p_description?: string | null
           p_due_date?: string | null
           p_priority?: string | null
+          p_label_ids?: Json | null
         }
         Returns: string
       }
@@ -272,6 +273,24 @@ export type Database = {
           p_board_id: string | null
           p_version: number | null
           p_title: string | null
+        }
+        Returns: string
+      }
+      create_label: {
+        Args: {
+          p_board_id: string | null
+          p_version: number | null
+          p_name: string | null
+          p_color: string | null
+        }
+        Returns: string
+      }
+      create_session: {
+        Args: {
+          p_id: string | null
+          p_card_id: string | null
+          p_starts_at: string | null
+          p_ends_at: string | null
         }
         Returns: string
       }
@@ -298,11 +317,34 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_label: {
+        Args: {
+          p_board_id: string | null
+          p_version: number | null
+          p_label_id: string | null
+        }
+        Returns: undefined
+      }
+      delete_session: {
+        Args: {
+          p_id: string | null
+          p_version: number | null
+        }
+        Returns: undefined
+      }
+      export_workspace: { Args: {}; Returns: Json }
       get_board_snapshot: {
         Args: {
           p_board_id: string | null
         }
         Returns: Json
+      }
+      get_scheduling_snapshot: { Args: {}; Returns: Json }
+      import_workspace: {
+        Args: {
+          p_data: Json | null
+        }
+        Returns: undefined
       }
       move_card: {
         Args: {
@@ -333,6 +375,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_calendar_preferences: {
+        Args: {
+          p_version: number | null
+          p_timezone: string | null
+          p_week_starts_on: number | null
+          p_calendar_view: string | null
+        }
+        Returns: undefined
+      }
       save_card: {
         Args: {
           p_board_id: string | null
@@ -344,6 +395,7 @@ export type Database = {
           p_completed: boolean | null
           p_archived: boolean | null
           p_priority?: string | null
+          p_label_ids?: Json | null
         }
         Returns: undefined
       }
@@ -353,6 +405,25 @@ export type Database = {
           p_version: number | null
           p_column_id: string | null
           p_title: string | null
+        }
+        Returns: undefined
+      }
+      save_label: {
+        Args: {
+          p_board_id: string | null
+          p_version: number | null
+          p_label_id: string | null
+          p_name: string | null
+          p_color: string | null
+        }
+        Returns: undefined
+      }
+      save_session: {
+        Args: {
+          p_id: string | null
+          p_version: number | null
+          p_starts_at: string | null
+          p_ends_at: string | null
         }
         Returns: undefined
       }

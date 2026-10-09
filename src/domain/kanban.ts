@@ -4,7 +4,15 @@ type Tables = Database['public']['Tables']
 export type Board = Tables['boards']['Row']
 export type Column = Tables['columns']['Row']
 export type Card = Tables['cards']['Row']
-export type BoardSnapshot = { board: Board; columns: Column[]; cards: Card[] }
+export type Label = Tables['labels']['Row']
+export type CardLabel = Tables['card_labels']['Row']
+export type BoardSnapshot = {
+  board: Board
+  columns: Column[]
+  cards: Card[]
+  labels: Label[]
+  cardLabels: CardLabel[]
+}
 export type CardFields = Pick<
   Card,
   | 'title'
@@ -17,12 +25,21 @@ export type CardFields = Pick<
 export type Command =
   | { kind: 'saveBoard'; title: string; archived: boolean; background?: string }
   | { kind: 'deleteBoard' }
+  | { kind: 'createLabel'; id: string; name: string; color: string }
+  | { kind: 'saveLabel'; id: string; name: string; color: string }
+  | { kind: 'deleteLabel'; id: string }
   | { kind: 'createColumn'; id: string; title: string }
   | { kind: 'saveColumn'; id: string; title: string }
   | { kind: 'deleteColumn'; id: string }
   | { kind: 'moveColumn'; id: string; beforeId: string | null }
-  | { kind: 'createCard'; id: string; columnId: string; fields: CardFields }
-  | { kind: 'saveCard'; id: string; fields: CardFields }
+  | {
+      kind: 'createCard'
+      id: string
+      columnId: string
+      fields: CardFields
+      labelIds?: string[]
+    }
+  | { kind: 'saveCard'; id: string; fields: CardFields; labelIds?: string[] }
   | { kind: 'deleteCard'; id: string }
   | { kind: 'moveCard'; id: string; columnId: string; beforeId: string | null }
 
@@ -64,6 +81,31 @@ export function applyCommand(
           background: command.background ?? board.background,
           archived_at: command.archived ? new Date().toISOString() : null,
         },
+      }
+    case 'createLabel':
+      return {
+        ...snapshot,
+        labels: [
+          ...snapshot.labels,
+          { ...base, id: command.id, name: command.name, color: command.color },
+        ],
+      }
+    case 'saveLabel':
+      return {
+        ...snapshot,
+        labels: snapshot.labels.map((label) =>
+          label.id === command.id
+            ? { ...label, name: command.name, color: command.color }
+            : label,
+        ),
+      }
+    case 'deleteLabel':
+      return {
+        ...snapshot,
+        labels: snapshot.labels.filter((label) => label.id !== command.id),
+        cardLabels: snapshot.cardLabels.filter(
+          (link) => link.label_id !== command.id,
+        ),
       }
     case 'deleteBoard':
       return snapshot
@@ -113,6 +155,7 @@ export function applyCommand(
     case 'createCard':
       return {
         ...snapshot,
+        cardLabels: assignedLabels(snapshot, command.id, command.labelIds),
         cards: [
           ...cards,
           {
@@ -129,6 +172,7 @@ export function applyCommand(
     case 'saveCard':
       return {
         ...snapshot,
+        cardLabels: assignedLabels(snapshot, command.id, command.labelIds),
         cards: cards.map((card) =>
           card.id === command.id ? { ...card, ...command.fields } : card,
         ),
@@ -136,6 +180,9 @@ export function applyCommand(
     case 'deleteCard':
       return {
         ...snapshot,
+        cardLabels: snapshot.cardLabels.filter(
+          (link) => link.card_id !== command.id,
+        ),
         cards: columns.flatMap((column) =>
           positioned(
             ordered(
@@ -171,4 +218,21 @@ export function applyCommand(
       }
     }
   }
+}
+
+function assignedLabels(
+  snapshot: BoardSnapshot,
+  cardId: string,
+  labelIds?: string[],
+): CardLabel[] {
+  if (!labelIds) return snapshot.cardLabels
+  return [
+    ...snapshot.cardLabels.filter((link) => link.card_id !== cardId),
+    ...labelIds.map((label_id) => ({
+      card_id: cardId,
+      label_id,
+      board_id: snapshot.board.id,
+      owner_id: snapshot.board.owner_id,
+    })),
+  ]
 }

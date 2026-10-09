@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+import { emptyTaskFilters, filterTasks } from './task-filters'
 import { applyCommand } from './kanban'
 import type { BoardSnapshot, Card } from './kanban'
 
@@ -42,6 +43,8 @@ const card = (
 })
 const snapshot: BoardSnapshot = {
   board,
+  labels: [],
+  cardLabels: [],
   columns,
   cards: [
     card('a', 'todo', 0),
@@ -122,4 +125,55 @@ it('rejects a missing destination instead of silently moving to a wrong position
       beforeId: 'missing',
     }),
   ).toThrow('Destination unavailable')
+})
+
+it('combines case-insensitive text, label, priority and completion filters without changing order', () => {
+  const labelled = applyCommand(snapshot, {
+    kind: 'createLabel',
+    id: 'label',
+    name: 'Client',
+    color: '#244e3c',
+  })
+  const updated = applyCommand(labelled, {
+    kind: 'saveCard',
+    id: 'a',
+    fields: {
+      title: 'Proposal',
+      description: 'Review CLIENT brief',
+      priority: 'high',
+      completed_at: '2026-10-09T12:00:00Z',
+      archived_at: null,
+      due_date: null,
+    },
+    labelIds: ['label'],
+  })
+  expect(
+    filterTasks(updated, {
+      search: ' client ',
+      labelId: 'label',
+      priority: 'high',
+      completion: 'completed',
+    }).map((card) => card.id),
+  ).toEqual(['a'])
+  expect(
+    filterTasks(updated, {
+      ...emptyTaskFilters,
+      completion: 'incomplete',
+    }).some((card) => card.id === 'a'),
+  ).toBe(false)
+  expect(
+    filterTasks(updated, { ...emptyTaskFilters, search: 'missing' }),
+  ).toEqual([])
+  expect(filterTasks(updated, emptyTaskFilters)).toEqual(updated.cards)
+  const removed = applyCommand(updated, { kind: 'deleteLabel', id: 'label' })
+  expect(removed.cardLabels).toEqual([])
+  expect(updated.cardLabels).toHaveLength(1)
+  expect(
+    applyCommand(updated, {
+      kind: 'saveCard',
+      id: 'a',
+      fields: updated.cards[0]!,
+      labelIds: [],
+    }).cardLabels,
+  ).toEqual([])
 })

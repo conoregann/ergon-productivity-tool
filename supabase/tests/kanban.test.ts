@@ -399,3 +399,220 @@ it('persists board background, rejects invalid colours, and isolates appearance 
     rpc('save_board', [board, latest, 'Anonymous', false, 'blue']),
   ).rejects.toThrow(/permission denied/)
 })
+
+it('saves label assignments atomically, includes them in snapshots, and rejects foreign labels', async () => {
+  const label = (
+    await rpc('create_label', [board, await revision(), 'Client', '#244e3c'])
+  ).rows[0]!.result as string
+  const card = (
+    await rpc('create_card', [
+      board,
+      await revision(),
+      columns[0]!.id,
+      'Labelled',
+      '',
+      null,
+      'high',
+      JSON.stringify([label]),
+    ])
+  ).rows[0]!.result as string
+  const snapshot = (await rpc('get_board_snapshot', [board])).rows[0]!
+    .result as { labels: { id: string }[]; cardLabels: { label_id: string }[] }
+  expect(snapshot.labels.map((item) => item.id)).toEqual([label])
+  expect(snapshot.cardLabels.map((item) => item.label_id)).toEqual([label])
+  const other = (await rpc('create_board', ['Other'])).rows[0]!.result as string
+  const otherVersion = (
+    await db.query<{ version: number }>(
+      'select version from public.boards where id = $1',
+      [other],
+    )
+  ).rows[0]!.version
+  const foreign = (
+    await rpc('create_label', [other, otherVersion, 'Foreign', '#244e3c'])
+  ).rows[0]!.result
+  const before = (await rpc('get_board_snapshot', [board])).rows
+  await expect(
+    rpc('save_card', [
+      board,
+      await revision(),
+      card,
+      'Must roll back',
+      '',
+      null,
+      false,
+      false,
+      'low',
+      JSON.stringify([foreign]),
+    ]),
+  ).rejects.toThrow(/Label unavailable/)
+  expect((await rpc('get_board_snapshot', [board])).rows).toEqual(before)
+  await expect(
+    rpc('create_card', [
+      board,
+      await revision(),
+      columns[0]!.id,
+      'Must roll back',
+      '',
+      null,
+      'none',
+      JSON.stringify([foreign]),
+    ]),
+  ).rejects.toThrow(/Label unavailable/)
+  expect((await rpc('get_board_snapshot', [board])).rows).toEqual(before)
+  await rpc('save_card', [
+    board,
+    await revision(),
+    card,
+    'Labelled',
+    '',
+    null,
+    false,
+    false,
+  ])
+  expect(
+    (
+      await db.query(
+        'select label_id from public.card_labels where card_id = $1',
+        [card],
+      )
+    ).rows,
+  ).toHaveLength(1)
+  await rpc('save_card', [
+    board,
+    await revision(),
+    card,
+    'Labelled',
+    '',
+    null,
+    false,
+    false,
+    'high',
+    '[]',
+  ])
+  expect(
+    (
+      await db.query(
+        'select label_id from public.card_labels where card_id = $1',
+        [card],
+      )
+    ).rows,
+  ).toHaveLength(0)
+})
+
+it('revision-checks label changes, validates input, cascades deletion, and blocks archived writes', async () => {
+  const current = await revision()
+  const label = (
+    await rpc('create_label', [board, current, 'Client', '#244e3c'])
+  ).rows[0]!.result
+  await expect(
+    rpc('save_label', [board, current, label, 'Stale', '#244e3c']),
+  ).rejects.toThrow(/Board changed/)
+  await expect(
+    rpc('create_label', [board, await revision(), 'Client', '#244e3c']),
+  ).rejects.toThrow(/unique constraint/)
+  await expect(
+    rpc('create_label', [board, await revision(), ' ', '#244e3c']),
+  ).rejects.toThrow(/check constraint/)
+  await expect(
+    rpc('save_label', [board, await revision(), label, 'Client', 'invalid']),
+  ).rejects.toThrow(/check constraint/)
+  await rpc('save_label', [
+    board,
+    await revision(),
+    label,
+    'Customer',
+    '#123456',
+  ])
+  await rpc('create_card', [
+    board,
+    await revision(),
+    columns[0]!.id,
+    'Task',
+    '',
+    null,
+    'none',
+    JSON.stringify([label]),
+  ])
+  await rpc('delete_label', [board, await revision(), label])
+  expect(
+    (
+      await db.query('select * from public.card_labels where board_id = $1', [
+        board,
+      ])
+    ).rows,
+  ).toEqual([])
+  expect(
+    (await db.query('select * from public.cards where board_id = $1', [board]))
+      .rows,
+  ).toHaveLength(1)
+  await rpc('save_board', [board, await revision(), 'Work', true])
+  await expect(
+    rpc('create_label', [board, await revision(), 'Blocked', '#244e3c']),
+  ).rejects.toThrow(/Board is archived/)
+})
+
+it('isolates label RPCs and assignment reads between users and denies anonymous access', async () => {
+  const label = (
+    await rpc('create_label', [board, await revision(), 'Private', '#244e3c'])
+  ).rows[0]!.result
+  await rpc('create_card', [
+    board,
+    await revision(),
+    columns[0]!.id,
+    'Private task',
+    '',
+    null,
+    'none',
+    JSON.stringify([label]),
+  ])
+  const current = await revision()
+  await db.exec(`set request.jwt.claim.sub = '${bob}';`)
+  expect(
+    (await db.query('select * from public.labels where board_id = $1', [board]))
+      .rows,
+  ).toEqual([])
+  expect(
+    (
+      await db.query('select * from public.card_labels where board_id = $1', [
+        board,
+      ])
+    ).rows,
+  ).toEqual([])
+  await expect(
+    rpc('create_label', [board, current, 'Stolen', '#244e3c']),
+  ).rejects.toThrow(/Board unavailable/)
+  await expect(
+    rpc('save_label', [board, current, label, 'Stolen', '#244e3c']),
+  ).rejects.toThrow(/Board unavailable/)
+  await expect(rpc('delete_label', [board, current, label])).rejects.toThrow(
+    /Board unavailable/,
+  )
+  const ownBoard = (await rpc('create_board', ['Bob'])).rows[0]!
+    .result as string
+  const own = (await rpc('get_board_snapshot', [ownBoard])).rows[0]!.result as {
+    board: { version: number }
+    columns: { id: string }[]
+  }
+  await expect(
+    rpc('create_card', [
+      ownBoard,
+      own.board.version,
+      own.columns[0]!.id,
+      'Forbidden label',
+      '',
+      null,
+      'none',
+      JSON.stringify([label]),
+    ]),
+  ).rejects.toThrow(/Label unavailable/)
+  await db.exec('reset role; set role anon;')
+  await expect(
+    rpc('create_label', [board, current, 'Anonymous', '#244e3c']),
+  ).rejects.toThrow(/permission denied/)
+  await expect(
+    rpc('save_label', [board, current, label, 'Anonymous', '#244e3c']),
+  ).rejects.toThrow(/permission denied/)
+  await expect(rpc('delete_label', [board, current, label])).rejects.toThrow(
+    /permission denied/,
+  )
+})

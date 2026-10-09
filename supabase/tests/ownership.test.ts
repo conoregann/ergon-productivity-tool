@@ -114,7 +114,7 @@ describe('ownership', () => {
     ]
     for (const sql of statements)
       await expect(db.query(sql)).rejects.toThrow(
-        /foreign key|Active board unavailable/,
+        /foreign key|Active board unavailable|Active task unavailable/,
       )
   })
 

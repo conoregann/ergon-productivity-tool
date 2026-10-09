@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import type { Preferences, Session } from '../../src/domain/scheduling.js'
 import type { BoardSnapshot } from '../../src/domain/kanban.js'
 
 const owner = '00000000-0000-0000-0000-000000000001'
@@ -10,7 +11,14 @@ export async function installBackend(page: Page) {
     version: 1,
   }
   const boards = new Map<string, BoardSnapshot>()
-  const control = { failNext: false, conflictNext: false, delayNext: 0 }
+  const sessions = new Map<string, Session>()
+  let preferences: Preferences | null = null
+  const control = {
+    failNext: false,
+    conflictNext: false,
+    delayNext: 0,
+    legacyBoardSnapshot: false,
+  }
   await page.addInitScript(
     ({ owner }) => {
       const jwt =
@@ -92,13 +100,96 @@ export async function installBackend(page: Page) {
           title,
           position,
         })),
+        labels: [],
+        cardLabels: [],
         cards: [],
       })
       return respond(id)
     }
+    if (name === 'get_scheduling_snapshot')
+      return respond({
+        boards: [...boards.values()].map((item) => item.board),
+        cards: [...boards.values()].flatMap((item) => item.cards),
+        sessions: [...sessions.values()],
+        labels: [...boards.values()].flatMap((item) => item.labels),
+        card_labels: [...boards.values()].flatMap((item) => item.cardLabels),
+        preferences,
+      })
+    if (name === 'save_calendar_preferences') {
+      if (control.failNext) {
+        control.failNext = false
+        return respond(
+          { code: 'P0001', message: 'Simulated write failure' },
+          400,
+        )
+      }
+      if (
+        control.conflictNext ||
+        args.p_version !== (preferences?.version ?? 0)
+      ) {
+        control.conflictNext = false
+        preferences = {
+          timezone: preferences?.timezone ?? 'UTC',
+          week_starts_on: preferences?.week_starts_on ?? 1,
+          calendar_view: preferences?.calendar_view ?? 'week',
+          version: (preferences?.version ?? 0) + 1,
+        }
+        return respond({ code: 'PT409', message: 'Preferences changed' }, 409)
+      }
+      preferences = {
+        timezone: String(args.p_timezone),
+        week_starts_on: Number(args.p_week_starts_on),
+        calendar_view: String(args.p_calendar_view),
+        version: (preferences?.version ?? 0) + 1,
+      }
+      return respond(null)
+    }
+    if (['create_session', 'save_session', 'delete_session'].includes(name!)) {
+      if (control.failNext) {
+        control.failNext = false
+        return respond(
+          { code: 'P0001', message: 'Simulated write failure' },
+          400,
+        )
+      }
+      const session = sessions.get(String(args.p_id))
+      if (
+        control.conflictNext ||
+        (name !== 'create_session' && session?.version !== args.p_version)
+      ) {
+        control.conflictNext = false
+        if (session) session.version++
+        return respond({ code: 'PT409', message: 'Session changed' }, 409)
+      }
+      if (name === 'create_session')
+        sessions.set(String(args.p_id), {
+          ...base,
+          id: String(args.p_id),
+          card_id: String(args.p_card_id),
+          starts_at: String(args.p_starts_at),
+          ends_at: String(args.p_ends_at),
+        })
+      if (name === 'save_session' && session)
+        Object.assign(session, {
+          starts_at: args.p_starts_at,
+          ends_at: args.p_ends_at,
+          version: session.version + 1,
+        })
+      if (name === 'delete_session') sessions.delete(String(args.p_id))
+      return respond(name === 'create_session' ? args.p_id : null)
+    }
     const snapshot = boards.get(String(args.p_board_id))
     if (!snapshot) return respond(null)
-    if (name === 'get_board_snapshot') return respond(snapshot)
+    if (name === 'get_board_snapshot')
+      return respond(
+        control.legacyBoardSnapshot
+          ? {
+              board: snapshot.board,
+              columns: snapshot.columns,
+              cards: snapshot.cards,
+            }
+          : snapshot,
+      )
     if (control.delayNext) {
       const delay = control.delayNext
       control.delayNext = 0
@@ -120,6 +211,31 @@ export async function installBackend(page: Page) {
     const cardId = String(args.p_card_id)
     const column = snapshot.columns.find((column) => column.id === columnId)
     const card = snapshot.cards.find((card) => card.id === cardId)
+    if (name === 'create_label') {
+      result = crypto.randomUUID()
+      snapshot.labels.push({
+        ...base,
+        id: String(result),
+        board_id: snapshot.board.id,
+        name: String(args.p_name),
+        color: String(args.p_color),
+      })
+    }
+    if (name === 'save_label') {
+      const label = snapshot.labels.find(
+        (label) => label.id === args.p_label_id,
+      )
+      if (label)
+        Object.assign(label, { name: args.p_name, color: args.p_color })
+    }
+    if (name === 'delete_label') {
+      snapshot.labels = snapshot.labels.filter(
+        (label) => label.id !== args.p_label_id,
+      )
+      snapshot.cardLabels = snapshot.cardLabels.filter(
+        (link) => link.label_id !== args.p_label_id,
+      )
+    }
     if (name === 'create_column') {
       result = crypto.randomUUID()
       snapshot.columns.push({
@@ -169,8 +285,27 @@ export async function installBackend(page: Page) {
         archived_at: args.p_archived ? new Date().toISOString() : null,
         completed_at: args.p_completed ? new Date().toISOString() : null,
       })
-    if (name === 'delete_card')
+    if (
+      (name === 'create_card' || name === 'save_card') &&
+      Array.isArray(args.p_label_ids)
+    ) {
+      const assignedCard = name === 'create_card' ? String(result) : cardId
+      snapshot.cardLabels = [
+        ...snapshot.cardLabels.filter((link) => link.card_id !== assignedCard),
+        ...args.p_label_ids.map((labelId) => ({
+          owner_id: owner,
+          board_id: snapshot.board.id,
+          card_id: assignedCard,
+          label_id: String(labelId),
+        })),
+      ]
+    }
+    if (name === 'delete_card') {
       snapshot.cards = snapshot.cards.filter((card) => card.id !== cardId)
+      snapshot.cardLabels = snapshot.cardLabels.filter(
+        (link) => link.card_id !== cardId,
+      )
+    }
     if (name === 'move_card' && card) {
       snapshot.cards = snapshot.cards.filter((item) => item.id !== cardId)
       card.column_id = columnId
@@ -197,5 +332,5 @@ export async function installBackend(page: Page) {
     snapshot.board.version++
     return respond(result)
   })
-  return control
+  return Object.assign(control, { seed: { boards, sessions } })
 }
