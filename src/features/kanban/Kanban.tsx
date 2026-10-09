@@ -21,7 +21,7 @@ import {
 import type { ReactNode } from 'react'
 import { Plus, MoreHorizontal } from 'lucide-react'
 import { Rename } from '../../app/Rename'
-import type { Card, Command } from '../../domain/kanban'
+import type { Board, Card, Command } from '../../domain/kanban'
 import { ConflictError } from './api'
 import { Editor } from './Editor'
 import type { EditorState } from './Editor'
@@ -49,11 +49,13 @@ const collisionDetection: CollisionDetection = (args) => {
 export function Kanban({
   ownerId,
   boardId,
+  boardPreview,
   onBack,
   sidebarControl,
 }: {
   ownerId: string
   boardId: string
+  boardPreview: Board | undefined
   onBack: () => void
   sidebarControl: ReactNode
 }) {
@@ -104,18 +106,25 @@ export function Kanban({
   }
   if (!query.data)
     return (
-      <section className="panel">
-        <button className="button-secondary" onClick={onBack}>
-          Back to boards
-        </button>
-        {query.isError ? (
-          <>
-            <p role="alert">{query.error.message}</p>
-            <button onClick={() => void query.refetch()}>Try again</button>
-          </>
-        ) : (
-          <p role="status">Loading board…</p>
-        )}
+      <section className="live-board" aria-labelledby="live-board-heading">
+        <header className="workspace-header board-header">
+          {sidebarControl}
+          <h1 id="live-board-heading">{boardPreview?.title}</h1>
+        </header>
+        <div
+          className="board-canvas"
+          data-background={boardPreview?.background}
+        >
+          {query.isError && (
+            <>
+              <p role="alert">{query.error.message}</p>
+              <button onClick={() => void query.refetch()}>Try again</button>
+              <button className="button-secondary" onClick={onBack}>
+                Back to boards
+              </button>
+            </>
+          )}
+        </div>
       </section>
     )
   const snapshot = query.data

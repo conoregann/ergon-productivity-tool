@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Archive,
@@ -15,12 +15,7 @@ import { AuthGate } from '../features/auth/AuthGate'
 import { useAuth } from '../features/auth/auth-context'
 import { Boards } from '../features/boards/Boards'
 import { listBoards } from '../features/boards/api'
-
-const Kanban = lazy(() =>
-  import('../features/kanban/Kanban').then((module) => ({
-    default: module.Kanban,
-  })),
-)
+import { Kanban } from '../features/kanban/Kanban'
 
 function Workspace() {
   const { session, signOut } = useAuth()
@@ -190,15 +185,14 @@ function Workspace() {
         tabIndex={-1}
       >
         {selected ? (
-          <Suspense fallback={<p role="status">Opening board…</p>}>
-            <Kanban
-              key={selected}
-              ownerId={ownerId}
-              boardId={selected}
-              sidebarControl={sidebarControl}
-              onBack={() => overview()}
-            />
-          </Suspense>
+          <Kanban
+            key={selected}
+            ownerId={ownerId}
+            boardId={selected}
+            boardPreview={boards.find((board) => board.id === selected)}
+            sidebarControl={sidebarControl}
+            onBack={() => overview()}
+          />
         ) : (
           <>
             <header className="workspace-header">
@@ -206,7 +200,6 @@ function Workspace() {
               <h1>{archived ? 'Archive' : 'Boards'}</h1>
             </header>
             <div className="workspace-content">
-              {query.isPending && <p role="status">Loading boards…</p>}
               {query.isError && (
                 <p role="alert" className="error">
                   Unable to load boards.{' '}

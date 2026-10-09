@@ -45,6 +45,47 @@ async function boardSettings(page: Page) {
     .click()
 }
 
+test('opens a board without a loading screen while its snapshot is pending', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  let release!: () => void
+  const pending = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route('**/rest/v1/rpc/get_board_snapshot', async (route) => {
+    await pending
+    await route.fallback()
+  })
+  await page.reload()
+  const tile = page.getByRole('button', {
+    name: 'Open board Personal projects',
+  })
+  await expect(tile).toBeVisible()
+  await expect(page.getByText(/Loading|Opening board/)).toHaveCount(0)
+  await tile.click()
+  await expect(
+    page.getByRole('heading', { name: 'Personal projects', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText(/Loading|Opening board/)).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: 'Back to boards' }),
+  ).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /sidebar/ })).toBeVisible()
+  await page.getByRole('button', { name: /sidebar/ }).focus()
+  await expect(page.getByRole('button', { name: /sidebar/ })).toBeFocused()
+  await page.screenshot({
+    path: testInfo.outputPath('board-pending.png'),
+    fullPage: true,
+  })
+  release()
+  await expect(
+    page.getByRole('button', { name: 'Open task Prepare proposal' }),
+  ).toBeVisible()
+  await expect(page.getByText(/Loading|Opening board/)).toHaveCount(0)
+})
+
 test('edits in a centred dialog, persists placement and priorities, and restores archived content', async ({
   page,
 }, testInfo) => {

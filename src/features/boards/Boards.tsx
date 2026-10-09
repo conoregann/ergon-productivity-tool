@@ -44,13 +44,9 @@ function BoardTile({
               ))}
           </span>
         ))}
-        {!data?.columns.length && (
+        {!isPending && !data?.columns.length && (
           <span className="mini-empty">
-            {isPending
-              ? 'Loading…'
-              : isError
-                ? 'Preview unavailable'
-                : 'Empty board'}
+            {isError ? 'Preview unavailable' : 'Empty board'}
           </span>
         )}
       </span>
