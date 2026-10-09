@@ -29,6 +29,7 @@ export const workspaceFixture: WorkspaceExport = {
       priority: 'high',
       position: 0,
       due_date: '2026-10-09',
+      due_time: null,
       completed_at: null,
       archived_at: null,
     },

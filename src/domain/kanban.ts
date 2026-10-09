@@ -18,6 +18,7 @@ export type CardFields = Pick<
   | 'title'
   | 'description'
   | 'due_date'
+  | 'due_time'
   | 'completed_at'
   | 'archived_at'
   | 'priority'

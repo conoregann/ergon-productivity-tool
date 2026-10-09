@@ -62,6 +62,9 @@ export function Editor({
   const [deadline, setDeadline] = useState(
     editor.kind === 'card' ? (editor.card?.due_date ?? '') : '',
   )
+  const [dueTime, setDueTime] = useState(
+    editor.kind === 'card' ? (editor.card?.due_time ?? '') : '',
+  )
   const [completed, setCompleted] = useState(
     editor.kind === 'card' && Boolean(editor.card?.completed_at),
   )
@@ -133,6 +136,7 @@ export function Editor({
       description,
       priority,
       due_date: deadline || null,
+      due_time: deadline && dueTime ? dueTime : null,
       completed_at: completed
         ? (editor.card?.completed_at ?? new Date().toISOString())
         : null,
@@ -213,6 +217,7 @@ export function Editor({
               description !== editor.card!.description ||
               priority !== editor.card!.priority ||
               deadline !== (editor.card!.due_date ?? '') ||
+              dueTime !== (editor.card!.due_time ?? '') ||
               completed !== Boolean(editor.card!.completed_at) ||
               archived !== Boolean(editor.card!.archived_at) ||
               labelIds.slice().sort().join(',') !==
@@ -350,7 +355,23 @@ export function Editor({
                     </p>
                   )}
                 </div>
-                <DatePicker value={deadline} onChange={setDeadline} />
+                <DatePicker
+                  value={deadline}
+                  onChange={(value) => {
+                    setDeadline(value)
+                    if (!value) setDueTime('')
+                  }}
+                />
+                <label>
+                  Due time
+                  <input
+                    type="time"
+                    value={dueTime}
+                    disabled={!deadline}
+                    step={60}
+                    onChange={(event) => setDueTime(event.target.value)}
+                  />
+                </label>
               </div>
               {editor.card && (
                 <label className="checkbox-label task-status completion-control">

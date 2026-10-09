@@ -137,3 +137,18 @@ it.each(['{', 'null', '[]', '{"format":"ergon","version":1}'])(
     expect(() => parseWorkspaceExport(json)).toThrow(/Invalid import/)
   },
 )
+
+it('accepts older exports without due times and validates optional deadline times', () => {
+  const data = structuredClone(workspaceFixture)
+  data.cards[0]!.due_date = '2026-10-09'
+  data.cards[0]!.due_time = '00:05'
+  expect(validateWorkspaceExport(data).cards[0]!.due_time).toBe('00:05')
+  data.cards[0]!.due_time = '24:00'
+  expect(() => validateWorkspaceExport(data)).toThrow(/due_time/)
+  data.cards[0]!.due_time = '12:30'
+  data.cards[0]!.due_date = null
+  expect(() => validateWorkspaceExport(data)).toThrow(/requires a due date/)
+  const legacy = structuredClone(workspaceFixture)
+  Reflect.deleteProperty(legacy.cards[0]!, 'due_time')
+  expect(validateWorkspaceExport(legacy)).toEqual(legacy)
+})

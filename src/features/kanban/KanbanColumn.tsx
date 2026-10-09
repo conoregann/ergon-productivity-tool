@@ -74,7 +74,16 @@ export function CardContent({
         {card.due_date && (
           <span className="deadline">
             <CalendarDays aria-hidden="true" />
-            <time dateTime={card.due_date}>Due {card.due_date}</time>
+            <time
+              dateTime={
+                card.due_time
+                  ? `${card.due_date}T${card.due_time}`
+                  : card.due_date
+              }
+            >
+              Due {card.due_date}
+              {card.due_time ? ` at ${card.due_time}` : ''}
+            </time>
           </span>
         )}
       </div>

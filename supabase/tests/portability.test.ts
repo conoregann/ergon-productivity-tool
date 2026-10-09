@@ -76,8 +76,8 @@ beforeAll(async () => {
     insert into public.boards(id, title, background) values ('10000000-0000-0000-0000-000000000001', 'History', 'sage');
     insert into public.boards(title) values ('Empty');
     insert into public.columns(id, board_id, title, position) values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Done', 3);
-    insert into public.cards(id, board_id, column_id, title, description, position, priority, due_date, completed_at, archived_at)
-      values ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Proposal', 'Long description 🌱', 2, 'urgent', '2026-10-09', '2026-10-08T10:00:00Z', null);
+    insert into public.cards(id, board_id, column_id, title, description, position, priority, due_date, due_time, completed_at, archived_at)
+      values ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Proposal', 'Long description 🌱', 2, 'urgent', '2026-10-09', '14:35', '2026-10-08T10:00:00Z', null);
     insert into public.labels(id, board_id, name, color) values ('40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Work', '#AABBCC');
     insert into public.card_labels(board_id, card_id, label_id) values ('10000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001');
     insert into public.scheduled_sessions(card_id, starts_at, ends_at) values

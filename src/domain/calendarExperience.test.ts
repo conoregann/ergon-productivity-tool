@@ -23,6 +23,7 @@ const cards = [
     board_id: 'work',
     title: 'Proposal',
     due_date: '2026-10-09',
+    due_time: null,
     completed_at: null,
   },
   {
@@ -30,6 +31,7 @@ const cards = [
     board_id: 'home',
     title: 'History',
     due_date: '2026-10-10',
+    due_time: null,
     completed_at: '2026-10-08T12:00:00Z',
     archived_at: '2026-10-08T12:00:00Z',
   },
@@ -38,6 +40,7 @@ const cards = [
     board_id: 'work',
     title: 'No deadline',
     due_date: null,
+    due_time: null,
     completed_at: null,
   },
 ] as Card[]

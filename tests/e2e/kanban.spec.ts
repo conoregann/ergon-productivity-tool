@@ -610,6 +610,7 @@ test('chooses deadlines with a keyboard calendar, preserves date-only values, an
   await installBackend(page)
   await createWorkspace(page)
   await page.getByRole('button', { name: 'Open task Prepare proposal' }).click()
+  await page.getByLabel('Due time', { exact: true }).fill('14:35')
   await page.getByRole('button', { name: 'Choose due date' }).click()
   const selected = page.locator('[data-date="2026-10-09"]')
   await expect(selected).toBeFocused()
@@ -643,6 +644,8 @@ test('chooses deadlines with a keyboard calendar, preserves date-only values, an
   ).toHaveAttribute('aria-expanded', 'false')
   await page.getByRole('button', { name: 'Choose due date' }).click()
   await page.getByRole('button', { name: 'Clear date', exact: true }).click()
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue('')
+  await expect(page.getByLabel('Due time', { exact: true })).toBeDisabled()
   await expect(page.getByLabel('Due date', { exact: true })).toHaveValue('')
   await page.getByRole('button', { name: 'Choose due date' }).click()
   await page.getByRole('button', { name: 'Tomorrow', exact: true }).click()
@@ -650,12 +653,22 @@ test('chooses deadlines with a keyboard calendar, preserves date-only values, an
   tomorrow.setDate(tomorrow.getDate() + 1)
   const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
   await expect(page.getByLabel('Due date', { exact: true })).toHaveValue(date)
+  await page.getByLabel('Due time', { exact: true }).fill('09:05')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.reload()
   await page
     .getByRole('button', { name: 'Open board Personal projects' })
     .click()
+  await expect(
+    page.getByText(`Due ${date} at 09:05`, { exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Open task Prepare proposal' }).click()
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue(
+    '09:05',
+  )
+  await page.getByLabel('Due time', { exact: true }).fill('')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByText(`Due ${date}`, { exact: true })).toBeVisible()
 })
 

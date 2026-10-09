@@ -94,6 +94,7 @@ export async function executeCommand(
         p_title: command.fields.title,
         p_description: command.fields.description,
         p_due_date: command.fields.due_date,
+        p_due_time: command.fields.due_time,
         p_priority: command.fields.priority,
         p_label_ids: command.labelIds ?? null,
       })
@@ -104,6 +105,7 @@ export async function executeCommand(
         p_title: command.fields.title,
         p_description: command.fields.description,
         p_due_date: command.fields.due_date,
+        p_due_time: command.fields.due_time,
         p_priority: command.fields.priority,
         p_label_ids: command.labelIds ?? null,
         p_completed: Boolean(command.fields.completed_at),

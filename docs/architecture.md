@@ -20,7 +20,7 @@ Ergon is a single React application backed by Supabase Auth and PostgreSQL. Verc
 
 All entities belong to an authenticated user. Composite foreign keys carry ownership through the board → column → card chain and through labels and sessions. Cards and labels must belong to the same board. RLS restricts CRUD to the owner; anonymous access is revoked. The browser receives only a publishable key.
 
-Sessions reference cards, and store `timestamptz` instants with `ends_at > starts_at`. Due dates use `date`. Completion is represented by `cards.completed_at`; a session derives completion from its card, retaining its original time/history. Columns do not implicitly determine completion.
+Sessions reference cards, and store `timestamptz` instants with `ends_at > starts_at`. Due dates use `date`, with an optional `HH:mm` local clock time stored separately as `due_time`; deadline times do not create scheduled sessions. Completion is represented by `cards.completed_at`; a session derives completion from its card, retaining its original time/history. Columns do not implicitly determine completion.
 
 Ordering uses nonnegative integer positions with deferrable uniqueness per parent. Security-invoker RPCs lock the owned board before mutating columns or cards, then repack positions within one transaction. Movement uses a destination and a before-item anchor; a null anchor appends. Archived cards retain positions and are included in repacking.
 

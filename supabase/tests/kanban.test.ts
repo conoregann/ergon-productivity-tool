@@ -616,3 +616,100 @@ it('isolates label RPCs and assignment reads between users and denies anonymous 
     /permission denied/,
   )
 })
+
+it('persists optional deadline times, rejects invalid times and isolates edits by owner', async () => {
+  const card = (
+    await rpc('create_card', [
+      board,
+      await revision(),
+      columns[0]!.id,
+      'Timed task',
+      '',
+      '2026-10-09',
+      'none',
+      null,
+      '00:05',
+    ])
+  ).rows[0]!.result as string
+  async function deadline() {
+    return (
+      await db.query(
+        'select due_date::text, due_time, column_id, completed_at from public.cards where id = $1',
+        [card],
+      )
+    ).rows[0]
+  }
+  expect(await deadline()).toMatchObject({
+    due_date: '2026-10-09',
+    due_time: '00:05',
+    column_id: columns[0]!.id,
+    completed_at: null,
+  })
+  const version = await revision()
+  await expect(
+    rpc('save_card', [
+      board,
+      version,
+      card,
+      'Timed task',
+      '',
+      '2026-10-09',
+      false,
+      false,
+      'none',
+      null,
+      '24:00',
+    ]),
+  ).rejects.toThrow(/check constraint/)
+  expect(await revision()).toBe(version)
+  await db.exec(`set request.jwt.claim.sub = '${bob}'`)
+  await expect(
+    rpc('save_card', [
+      board,
+      version,
+      card,
+      'Intrusion',
+      '',
+      '2026-10-09',
+      false,
+      false,
+      'none',
+      null,
+      '12:30',
+    ]),
+  ).rejects.toThrow(/unavailable/i)
+  expect(
+    (await db.query('select due_time from public.cards where id = $1', [card]))
+      .rows,
+  ).toEqual([])
+  await db.exec(`set request.jwt.claim.sub = '${alice}'`)
+  expect(await deadline()).toMatchObject({ due_time: '00:05' })
+  await rpc('save_card', [
+    board,
+    await revision(),
+    card,
+    'Timed task',
+    '',
+    null,
+    false,
+    false,
+  ])
+  expect(await deadline()).toMatchObject({
+    due_date: null,
+    due_time: null,
+    completed_at: null,
+  })
+  await expect(
+    rpc('create_card', [
+      board,
+      await revision(),
+      columns[0]!.id,
+      'No date',
+      '',
+      null,
+      'none',
+      null,
+      '12:30',
+    ]),
+  ).rejects.toThrow(/check constraint/)
+})

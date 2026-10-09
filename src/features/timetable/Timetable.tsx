@@ -426,7 +426,7 @@ export function Timetable({
                 events={[
                   ...markers.map((card) => ({
                     id: `deadline-${card.id}`,
-                    title: `Deadline: ${card.title}${card.completed_at ? ' · Completed' : ''}`,
+                    title: `Deadline${card.due_time ? ` ${card.due_time}` : ''}: ${card.title}${card.completed_at ? ' · Completed' : ''}`,
                     start: card.due_date!,
                     allDay: true,
                     editable: false,

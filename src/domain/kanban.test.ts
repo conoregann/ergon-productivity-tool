@@ -38,6 +38,7 @@ const card = (
   description: '',
   priority: 'none',
   due_date: null,
+  due_time: null,
   completed_at: null,
   archived_at: archived ? '2026-10-08T09:00:00Z' : null,
 })
@@ -144,6 +145,7 @@ it('combines case-insensitive text, label, priority and completion filters witho
       completed_at: '2026-10-09T12:00:00Z',
       archived_at: null,
       due_date: null,
+      due_time: null,
     },
     labelIds: ['label'],
   })

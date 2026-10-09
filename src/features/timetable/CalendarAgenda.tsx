@@ -57,10 +57,12 @@ export function CalendarAgenda({
                 key={card.id}
                 type="button"
                 className="agenda-entry deadline-entry"
-                aria-label={`Deadline ${card.title}${card.completed_at ? ' Completed' : ''}`}
+                aria-label={`Deadline ${card.title}${card.due_time ? ` at ${card.due_time}` : ''}${card.completed_at ? ' Completed' : ''}`}
                 onClick={() => onTask(card)}
               >
-                <span>Deadline</span>
+                <span>
+                  Deadline{card.due_time ? ` · ${card.due_time}` : ''}
+                </span>
                 <strong>{card.title}</strong>
                 {card.completed_at && (
                   <span className="calendar-completed">Completed</span>

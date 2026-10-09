@@ -60,6 +60,10 @@ const schemas = {
     description: (v: unknown) => typeof v === 'string',
     position,
     due_date: nullable(date),
+    due_time: (v: unknown) =>
+      v === undefined ||
+      v === null ||
+      (typeof v === 'string' && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(v)),
     archived_at: nullable(instant),
     completed_at: nullable(instant),
     priority: oneOf('none', 'low', 'medium', 'high', 'urgent'),
@@ -118,6 +122,7 @@ export function validateWorkspaceExport(value: unknown): WorkspaceExport {
     checkUnique(`column:${c.board_id}:${c.position}`)
   }
   for (const c of result.cards) {
+    if (c.due_time && !c.due_date) fail('due time requires a due date')
     if (
       !boards.has(c.board_id) ||
       columns.get(c.column_id)?.board_id !== c.board_id
