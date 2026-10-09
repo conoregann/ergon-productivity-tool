@@ -170,18 +170,23 @@ try {
       p_card_id: cardId,
       p_title: 'Temporary task',
       p_description: '',
-      p_due_date: null,
+      p_due_date: '2026-10-09',
+      p_due_time: '14:30',
+      p_label_ids: [labelId],
       p_completed: false,
       p_archived: false,
       p_priority: 'urgent',
     }),
-    'Edit task priority',
+    'Save task priority, label assignment, and deadline time',
   )
   snapshot = checked(
     await alice.rpc('get_board_snapshot', { p_board_id: boardId }),
     'Verify priority persistence',
   )
   assert.equal(snapshot.cards[0].priority, 'urgent')
+  assert.equal(snapshot.cards[0].due_date, '2026-10-09')
+  assert.equal(snapshot.cards[0].due_time, '14:30')
+  assert.equal(snapshot.cardLabels[0].label_id, labelId)
   checked(
     await alice.rpc('save_board', {
       p_board_id: boardId,
