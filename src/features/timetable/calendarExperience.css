@@ -55,10 +55,6 @@
   color: var(--destructive);
   font-weight: 600;
 }
-.calendar-help {
-  color: var(--muted);
-  font-size: 13px;
-}
 .timetable-calendar {
   --fc-classic-border: var(--line);
   --fc-classic-strong-border: var(--input-line);
@@ -67,8 +63,8 @@
   --fc-classic-muted: var(--hover);
   --fc-classic-foreground: var(--text);
   --fc-classic-muted-foreground: var(--muted);
-  --fc-classic-event: var(--strong);
-  --fc-classic-event-contrast: var(--on-strong);
+  --fc-classic-event: var(--hover);
+  --fc-classic-event-contrast: var(--text);
   --fc-classic-today: var(--surface);
   --fc-classic-now: var(--destructive);
 }
@@ -82,7 +78,8 @@
 .timetable-calendar .calendar-deadline {
   --fc-classic-event: var(--surface);
   --fc-classic-event-contrast: var(--text);
-  border-style: dashed;
+  border-style: solid;
+  border-left-width: 3px;
 }
 .timetable-calendar .session-completed {
   --fc-classic-event: var(--completion-soft);
@@ -94,10 +91,6 @@
   outline: 2px solid var(--completion);
   outline-offset: 2px;
 }
-.calendar-preferences-button {
-  align-self: start;
-  margin-bottom: 12px;
-}
 .timetable-calendar .calendar-agenda {
   overflow: auto;
   flex: 1;
@@ -108,5 +101,269 @@
   }
   .calendar-filters {
     gap: 8px;
+  }
+}
+
+.timetable-calendar {
+  padding: 0;
+  --fc-classic-today: color-mix(in srgb, var(--text) 2.5%, var(--canvas));
+  --fc-classic-now: var(--text);
+}
+.timetable-toolbar {
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.timetable-period {
+  display: grid;
+  gap: 5px;
+  margin-right: auto;
+}
+.timetable-period h2 {
+  order: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.timetable-timezone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.timetable-timezone svg {
+  width: 12px;
+  height: 12px;
+}
+.timetable-navigation {
+  gap: 2px;
+}
+.timetable-navigation button {
+  background: transparent;
+  border-color: transparent;
+  padding: 6px 10px;
+  min-height: 36px;
+}
+.timetable-navigation button:hover {
+  background: var(--surface);
+  opacity: 1;
+}
+.timetable-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 20px;
+  border-left: 1px solid var(--line);
+}
+.timetable-tools .timetable-view {
+  margin: 0;
+}
+.timetable-view select {
+  margin: 0;
+  min-height: 36px;
+  padding: 6px 30px 6px 10px;
+  background-color: var(--surface);
+  border-color: var(--line);
+  font-size: 12px;
+}
+.timetable-tools .filter-toggle {
+  min-height: 36px;
+  border-color: var(--line);
+}
+.calendar-grid {
+  min-height: 0;
+}
+.calendar-day-cell {
+  font-weight: 400;
+}
+.calendar-day-heading {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 12px 0;
+}
+.calendar-day-heading span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.calendar-day-heading strong {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.calendar-day-heading.is-today strong {
+  background: var(--strong);
+  color: var(--on-strong);
+}
+.calendar-time-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  padding-inline: 12px;
+}
+.calendar-all-day-label {
+  padding-inline: 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.timetable-toolbar:has(.filter-toggle[aria-expanded='true']) .timetable-tools {
+  flex: 0 0 100%;
+  align-items: flex-start;
+  padding-left: 0;
+  border-left: 0;
+}
+.timetable-tools .calendar-filters {
+  min-width: 0;
+}
+.timetable-tools .filter-fields label {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.timetable-tools .filter-fields select {
+  width: 100%;
+}
+.calendar-time-lane {
+  border-color: color-mix(in srgb, var(--line) 65%, var(--canvas));
+}
+.timetable-calendar .calendar-session,
+.timetable-calendar .calendar-deadline {
+  border-radius: 3px;
+  border-color: var(--line);
+  border-left: 2px solid var(--input-line);
+  box-shadow: none;
+  cursor: pointer;
+}
+.timetable-calendar .calendar-session:hover,
+.timetable-calendar .calendar-deadline:hover {
+  border-left-color: var(--text);
+}
+.timetable-calendar .calendar-deadline {
+  border-left-style: dashed;
+}
+.timetable-calendar .session-completed {
+  border-left-color: var(--completion);
+}
+.timetable-calendar .session-overlap {
+  border-left-color: var(--destructive);
+}
+.calendar-event-inner {
+  padding: 0;
+  min-width: 0;
+}
+.calendar-event-content {
+  display: grid;
+  gap: 3px;
+  padding: 5px 7px;
+  overflow: hidden;
+  line-height: 1.35;
+}
+.calendar-event-time {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.calendar-event-content strong {
+  font-size: 12px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.calendar-event-content.is-short {
+  display: block;
+  padding-block: 2px;
+}
+.calendar-event-content.is-short .calendar-event-time {
+  margin-right: 6px;
+}
+.timetable-notice,
+.timetable-calendar > p {
+  padding: 8px 24px;
+}
+.timetable-calendar .calendar-agenda {
+  padding: 8px 24px 24px;
+}
+.agenda-day {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  column-gap: 24px;
+  padding: 20px 0;
+}
+.agenda-day:first-child {
+  border-top: 0;
+}
+.agenda-day h2 {
+  grid-row: 1 / span 100;
+  font-size: 13px;
+  font-weight: 550;
+  padding-top: 10px;
+}
+.agenda-entry {
+  grid-column: 2;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  border-left-width: 2px;
+  border-radius: 3px;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.agenda-entry:hover {
+  background: var(--hover);
+  opacity: 1;
+}
+.agenda-time {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.agenda-entry strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+@media (max-width: 1000px) {
+  .timetable-toolbar {
+    gap: 12px;
+    padding: 16px;
+  }
+  .timetable-period {
+    flex-basis: 100%;
+  }
+  .timetable-tools {
+    margin-left: auto;
+    padding-left: 12px;
+  }
+}
+@media (max-width: 759px) {
+  .timetable-calendar {
+    padding: 0;
+  }
+  .timetable-period h2 {
+    font-size: 15px;
+  }
+  .timetable-tools {
+    gap: 4px;
+    padding-left: 0;
+    border-left: 0;
+  }
+  .timetable-tools .filter-toggle {
+    padding-inline: 8px;
+  }
+  .timetable-calendar .calendar-agenda {
+    padding: 0 16px 16px;
+  }
+  .agenda-day {
+    display: block;
+    padding: 16px 0;
+  }
+  .agenda-day h2 {
+    padding-top: 0;
   }
 }

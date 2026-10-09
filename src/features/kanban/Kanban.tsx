@@ -19,7 +19,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import type { ReactNode } from 'react'
-import { Plus, Settings, Tags } from 'lucide-react'
+import { CalendarDays, Plus, Settings, Tags } from 'lucide-react'
 import { BoardFilters } from './BoardFilters'
 import { Rename } from '../../app/Rename'
 import type { Board, Card, Column, Command } from '../../domain/kanban'
@@ -54,11 +54,13 @@ export function Kanban({
   boardId,
   boardPreview,
   onBack,
+  onTimetable,
   sidebarControl,
 }: {
   ownerId: string
   boardId: string
   boardPreview: Board | undefined
+  onTimetable: () => void
   onBack: () => void
   sidebarControl: ReactNode
 }) {
@@ -225,6 +227,14 @@ export function Kanban({
           />
         </h1>
         {board.archived_at && <span className="quiet-badge">Archived</span>}
+        <button
+          className="button-secondary board-tool"
+          aria-label="Board timetable"
+          title="Board timetable"
+          onClick={onTimetable}
+        >
+          <CalendarDays aria-hidden="true" />
+        </button>
         <BoardFilters
           value={{ ...filters, labelId }}
           labels={snapshot.labels}

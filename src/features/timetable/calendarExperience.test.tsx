@@ -51,7 +51,7 @@ it('opens a completed session and a separate date-only deadline using the keyboa
     name: 'Edit session Proposal, 2026-10-09 10:00 GMT+1 to 2026-10-09 11:00 GMT+1, completed, overlap',
   })
   expect(screen.getByText('Overlaps another session')).toBeVisible()
-  expect(screen.getByText('No sessions or deadlines.')).toBeVisible()
+  expect(screen.queryByText('Saturday 10 Oct')).not.toBeInTheDocument()
   deadline.focus()
   await user.keyboard('{Enter}')
   expect(onTask).toHaveBeenCalledWith(cards[0])
@@ -89,4 +89,21 @@ it('clears a label from another board when switching boards', async () => {
     labelId: '',
     completion: 'all',
   })
+})
+
+it('shows one empty state for an agenda without dated tasks or sessions', () => {
+  render(
+    <CalendarAgenda
+      dates={['2026-10-09', '2026-10-10']}
+      timezone="UTC"
+      cards={[]}
+      boards={boards}
+      sessions={[]}
+      conflicts={new Set()}
+      onSession={vi.fn()}
+      onTask={vi.fn()}
+    />,
+  )
+  expect(screen.getByText('No tasks for these dates.')).toBeVisible()
+  expect(screen.queryAllByRole('heading')).toHaveLength(0)
 })

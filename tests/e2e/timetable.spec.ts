@@ -83,9 +83,7 @@ test('daily and weekly planning keeps multiple sessions attached to the same tas
     .getByRole('button', { name: 'Remove session', exact: true })
     .click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(
-    page.locator('[data-task-id]').filter({ hasText: 'Revised proposal' }),
-  ).toBeVisible()
+  await expect(page.locator('[data-task-id]')).toHaveCount(0)
   if (await page.getByRole('button', { name: 'Expand sidebar' }).isVisible())
     await page.getByRole('button', { name: 'Expand sidebar' }).click()
   await page.getByRole('button', { name: 'Planning', exact: true }).click()
@@ -124,7 +122,7 @@ test('failed scheduling retains the draft and allows a retry', async ({
   await expect(sessions(page)).toHaveCount(1)
 })
 
-test('pointer dragging creates, moves and resizes a saved session', async ({
+test('pointer dragging moves and resizes a saved session', async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -152,13 +150,8 @@ test('pointer dragging creates, moves and resizes a saved session', async ({
     await page.mouse.move(to.x, to.y, { steps: 20 })
     await page.mouse.up()
   }
-  const task = await page.locator('[data-task-id]').boundingBox()
-  expect(task).not.toBeNull()
   const nine = await slot('09:00')
-  await drag(
-    { x: task!.x + task!.width / 2, y: task!.y + task!.height / 2 },
-    nine,
-  )
+  await schedule(page, '2026-10-09T09:00', '2026-10-09T10:00')
   await expect.poll(() => control.seed.sessions.size).toBe(1)
   const saved = () => [...control.seed.sessions.values()][0]!
   await expect(sessions(page)).toHaveCount(1)

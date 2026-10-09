@@ -133,7 +133,9 @@ function Workspace() {
                   <button
                     className="sidebar-board"
                     key={board.id}
-                    aria-current={selected === board.id ? 'page' : undefined}
+                    aria-current={
+                      selected === board.id && !timetable ? 'page' : undefined
+                    }
                     onClick={() => {
                       setTimetable(false)
                       setSelected(board.id)
@@ -215,7 +217,12 @@ function Workspace() {
       >
         {timetable ? (
           <Suspense fallback={<p role="status">Loading timetable…</p>}>
-            <Timetable ownerId={ownerId} sidebarControl={sidebarControl} />
+            <Timetable
+              key={selected ?? 'all-boards'}
+              ownerId={ownerId}
+              boardId={selected ?? ''}
+              sidebarControl={sidebarControl}
+            />
           </Suspense>
         ) : selected ? (
           <Kanban
@@ -224,6 +231,7 @@ function Workspace() {
             boardId={selected}
             boardPreview={boards.find((board) => board.id === selected)}
             sidebarControl={sidebarControl}
+            onTimetable={() => setTimetable(true)}
             onBack={() => overview()}
           />
         ) : (

@@ -30,6 +30,8 @@ export function useBoard(ownerId: string, boardId: string) {
       await Promise.all([
         cache.invalidateQueries({ queryKey: key }),
         cache.invalidateQueries({ queryKey: ['boards', ownerId] }),
+        cache.invalidateQueries({ queryKey: ['timetable', ownerId] }),
+        cache.invalidateQueries({ queryKey: ['scheduling', ownerId] }),
       ])
     },
   })

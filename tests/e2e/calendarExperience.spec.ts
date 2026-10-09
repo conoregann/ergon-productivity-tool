@@ -161,7 +161,7 @@ test('calendar shows date-only deadlines and keyboard session controls in the de
   await setup(page)
   const deadline = page.locator('.calendar-deadline')
   await expect(deadline).toHaveCount(1)
-  await expect(deadline).toContainText('Deadline: Proposal history')
+  await expect(deadline).toContainText('Proposal history')
   const session = page.locator('[data-session-id="work-session"]')
   await expect(session).toContainText('Completed')
   await session.focus()
@@ -214,5 +214,98 @@ test('mobile scheduling form moves and resizes sessions without drag gestures', 
     .click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(control.seed.boards.get('home')!.cards[0]!.title).toBe('Research')
-  await expect(page.locator('[data-task-id="home-task"]')).toBeVisible()
+  await expect(page.locator('[data-task-id]')).toHaveCount(0)
+})
+
+test('board and sidebar timetables show dated tasks and keep deadline times separate from sessions', async ({
+  page,
+}, testInfo) => {
+  const control = await setup(page)
+  await expect(
+    page.getByRole('heading', { name: 'Timetable', exact: true }),
+  ).toBeVisible()
+  if (await page.getByRole('button', { name: 'Expand sidebar' }).isVisible())
+    await page.getByRole('button', { name: 'Expand sidebar' }).click()
+  await page.getByRole('button', { name: 'Home', exact: true }).click()
+  await page
+    .getByRole('button', { name: 'Open task Research', exact: true })
+    .click()
+  await page.getByLabel('Due date', { exact: true }).fill('2026-10-09')
+  await page.getByLabel('Due time', { exact: true }).fill('11:15')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page
+    .getByRole('button', { name: 'Board timetable', exact: true })
+    .click()
+  await expect(page.locator('.unscheduled-panel')).toHaveCount(0)
+  await expect(
+    page.getByRole('heading', { name: 'Timetable', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  await expect(
+    page.getByRole('combobox', { name: 'Board', exact: true }),
+  ).toHaveValue('home')
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  if (testInfo.project.name === 'chromium') {
+    const deadline = page
+      .locator('.calendar-deadline')
+      .filter({ hasText: 'Research' })
+    await expect(deadline).toHaveCount(1)
+    await expect(deadline).toContainText('11:15')
+    await expect(
+      page
+        .locator('.calendar-deadline')
+        .filter({ hasText: 'Proposal history' }),
+    ).toHaveCount(0)
+    await deadline.focus()
+    await page.keyboard.press('Enter')
+  } else {
+    await page
+      .getByRole('button', { name: 'Deadline Research at 11:15' })
+      .click()
+  }
+  await expect(page.getByLabel('Due time', { exact: true })).toHaveValue(
+    '11:15',
+  )
+  await page.getByLabel('Due time', { exact: true }).fill('')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Timetable', exact: true }).click()
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  await expect(
+    page.getByRole('combobox', { name: 'Board', exact: true }),
+  ).toHaveValue('')
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  if (testInfo.project.name === 'chromium') {
+    await expect(page.locator('.calendar-deadline')).toHaveCount(2)
+    await expect(
+      page.locator('.calendar-deadline').filter({ hasText: 'Research' }),
+    ).not.toContainText('11:15')
+  } else {
+    await expect(
+      page.getByRole('button', { name: 'Deadline Research', exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Deadline Proposal history Completed' }),
+    ).toBeVisible()
+  }
+  expect(control.seed.sessions.size).toBe(2)
+  expect(control.seed.boards.get('home')!.cards[0]!.column_id).toBe(
+    'home-column',
+  )
+  expect(control.seed.boards.get('home')!.cards[0]!.completed_at).toBeNull()
+  if (testInfo.project.name === 'mobile') {
+    await page
+      .getByRole('button', { name: 'Collapse sidebar', exact: true })
+      .click()
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true)
+  await page.screenshot({
+    path: testInfo.outputPath('minimal-timetable.png'),
+    fullPage: true,
+  })
 })

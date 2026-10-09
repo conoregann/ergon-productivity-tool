@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import FullCalendar from '@fullcalendar/react'
@@ -7,9 +7,9 @@ import themePlugin from '@fullcalendar/react/themes/classic'
 import '@fullcalendar/react/skeleton.css'
 import '@fullcalendar/react/themes/classic/theme.css'
 import '@fullcalendar/react/themes/classic/palette.css'
-import interactionPlugin, { Draggable } from '@fullcalendar/react/interaction'
+import interactionPlugin from '@fullcalendar/react/interaction'
 import type { EventApi } from '@fullcalendar/react'
-import { CalendarDays, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Globe2, Plus, Settings } from 'lucide-react'
 import { loadTimetable, changeSession } from './api'
 import type { SessionChange } from './api'
 import { SessionEditor } from './SessionEditor'
@@ -46,7 +46,6 @@ function TaskEditor({
   onClose: () => void
 }) {
   const { query, mutation } = useBoard(ownerId, card.board_id)
-  const cache = useQueryClient()
   const [placement, setPlacement] = useState(false)
   const [version, setVersion] = useState<number | null>(
     query.data?.board.version ?? null,
@@ -88,14 +87,7 @@ function TaskEditor({
       onClose={onClose}
       onPlacement={() => setPlacement(true)}
       onSubmit={async (command, version) => {
-        try {
-          await mutation.mutateAsync({ command, version })
-        } finally {
-          await Promise.all([
-            cache.invalidateQueries({ queryKey: ['timetable', ownerId] }),
-            cache.invalidateQueries({ queryKey: ['scheduling', ownerId] }),
-          ])
-        }
+        await mutation.mutateAsync({ command, version })
       }}
     />
   )
@@ -104,24 +96,24 @@ function TaskEditor({
 export function Timetable({
   ownerId,
   sidebarControl,
+  boardId = '',
 }: {
   ownerId: string
   sidebarControl: ReactNode
+  boardId?: string
 }) {
   const cache = useQueryClient()
   const queryKey = ['timetable', ownerId]
   const query = useQuery({ queryKey, queryFn: () => loadTimetable() })
-  const panel = useRef<HTMLDivElement>(null)
   const [mobile, setMobile] = useState(window.innerWidth < 760)
   const [view, setView] = useState('week')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [filters, setFilters] = useState<Filters>({
-    boardId: '',
+    boardId,
     labelId: '',
     completion: 'all',
   })
   const [preferencesOpen, setPreferencesOpen] = useState(false)
-  const [allTasks, setAllTasks] = useState(false)
   const [draft, setDraft] = useState<SessionDraft | null>(null)
   const [editing, setEditing] = useState<Card | null>(null)
   const [notice, setNotice] = useState('')
@@ -152,18 +144,6 @@ export function Timetable({
   useEffect(() => {
     if (query.data?.preferences) setView(query.data.preferences.calendar_view)
   }, [query.data?.preferences])
-  useEffect(() => {
-    if (!panel.current) return
-    const draggable = new Draggable(panel.current, {
-      itemSelector: '[data-task-id]',
-      eventData: (element) => ({
-        title: element.textContent ?? '',
-        duration: '01:00',
-        create: false,
-      }),
-    })
-    return () => draggable.destroy()
-  }, [])
   const data = query.data
   const preferences = data?.preferences ?? defaultPreferences
   const effectiveView = mobile ? 'agenda' : view
@@ -186,14 +166,16 @@ export function Timetable({
       !card.completed_at &&
       !data?.boards.find((board) => board.id === card.board_id)?.archived_at,
   )
-  const shownTasks = activeCards.filter(
-    (card) =>
-      allTasks ||
-      !data?.sessions.some((session) => session.card_id === card.id),
-  )
   const markers = deadlineCards(cards, dates[0]!, addDays(dates.at(-1)!, 1))
-  const heading =
-    dates.length === 1 ? dates[0] : `${dates[0]} – ${dates.at(-1)}`
+  const heading = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).formatRange(
+    new Date(`${dates[0]!}T12:00:00Z`),
+    new Date(`${dates.at(-1)!}T12:00:00Z`),
+  )
   function openSession(session: ScheduledSession) {
     if (mutation.isPending) return
     mutation.reset()
@@ -233,81 +215,32 @@ export function Timetable({
     <>
       <header className="workspace-header">
         <>{sidebarControl}</>
-        <h1>
-          <CalendarDays aria-hidden="true" /> Timetable
-        </h1>
+        <h1>Timetable</h1>
+        {filters.boardId && (
+          <span className="muted timetable-board-name">
+            {data?.boards.find((board) => board.id === filters.boardId)?.title}
+          </span>
+        )}
         <button
+          className="timetable-schedule"
+          aria-label="Schedule task"
+          title="Schedule task"
           disabled={!activeCards.length || mutation.isPending}
           onClick={() => openDraft()}
         >
-          <Plus aria-hidden="true" /> Schedule task
+          <Plus aria-hidden="true" /> <span>Schedule task</span>
         </button>
       </header>
       <div className="timetable-layout">
-        <aside className="unscheduled-panel" aria-label="Task scheduling panel">
-          <h2>
-            Unscheduled tasks{' '}
-            <span className="muted">
-              {
-                activeCards.filter(
-                  (card) =>
-                    !data?.sessions.some(
-                      (session) => session.card_id === card.id,
-                    ),
-                ).length
-              }
-            </span>
-          </h2>
-          <p className="muted">
-            Drag a task into a time slot, or select it to schedule.
-          </p>
-          <label className="check-label">
-            <input
-              type="checkbox"
-              checked={allTasks}
-              onChange={(event) => setAllTasks(event.target.checked)}
-            />{' '}
-            Include scheduled tasks
-          </label>
-          <div ref={panel} className="scheduling-tasks">
-            {shownTasks.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                data-task-id={card.id}
-                className="scheduling-task"
-                disabled={mutation.isPending}
-                onClick={() => openDraft(card.id)}
-              >
-                <strong>{card.title}</strong>
-                <span>
-                  {
-                    data?.boards.find((board) => board.id === card.board_id)
-                      ?.title
-                  }
-                </span>
-                {card.priority !== 'none' && (
-                  <span
-                    className="priority-badge"
-                    data-priority={card.priority}
-                  >
-                    {card.priority}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          {query.isPending && <p role="status">Loading tasks…</p>}
-          {data && !shownTasks.length && (
-            <p className="muted">
-              {allTasks
-                ? 'Create a task on a board to begin.'
-                : 'No unscheduled tasks. Include scheduled tasks to plan another session.'}
-            </p>
-          )}
-        </aside>
         <section className="timetable-calendar" aria-label="Scheduled work">
           <div className="timetable-toolbar">
+            <div className="timetable-period">
+              <h2>{heading}</h2>
+              <span className="timetable-timezone">
+                <Globe2 aria-hidden="true" />
+                {preferences.timezone.replaceAll('_', ' ')}
+              </span>
+            </div>
             <div className="timetable-navigation">
               <button
                 className="button-secondary"
@@ -316,7 +249,7 @@ export function Timetable({
                   setDate(addDays(date, effectiveView === 'day' ? -1 : -7))
                 }
               >
-                ‹
+                <ChevronLeft aria-hidden="true" />
               </button>
               <button
                 className="button-secondary"
@@ -338,42 +271,39 @@ export function Timetable({
                   setDate(addDays(date, effectiveView === 'day' ? 1 : 7))
                 }
               >
-                ›
+                <ChevronRight aria-hidden="true" />
               </button>
             </div>
-            <h2>{heading}</h2>
-            <label>
-              View
-              <select
-                value={effectiveView}
-                onChange={(event) => setView(event.target.value)}
+            <div className="timetable-tools">
+              <label className="timetable-view">
+                <span className="sr-only">View</span>
+                <select
+                  value={effectiveView}
+                  onChange={(event) => setView(event.target.value)}
+                >
+                  {!mobile && <option value="day">Daily</option>}
+                  {!mobile && <option value="week">Weekly</option>}
+                  <option value="agenda">Agenda</option>
+                </select>
+              </label>
+              <CalendarFilters
+                boards={data?.boards ?? []}
+                labels={data?.labels ?? []}
+                value={filters}
+                onChange={setFilters}
+              />
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Calendar preferences"
+                title={`Calendar preferences · ${preferences.timezone}`}
+                onClick={() => setPreferencesOpen(true)}
               >
-                {!mobile && <option value="day">Daily</option>}
-                {!mobile && <option value="week">Weekly</option>}
-                <option value="agenda">Agenda</option>
-              </select>
-            </label>
+                <Settings aria-hidden="true" />
+              </button>
+            </div>
           </div>
-          <p className="timetable-timezone muted">
-            {preferences.timezone} · Select a session to edit its times or task.
-          </p>
-          <button
-            className="text-button calendar-preferences-button"
-            type="button"
-            onClick={() => setPreferencesOpen(true)}
-          >
-            Calendar preferences
-          </button>
-          <CalendarFilters
-            boards={data?.boards ?? []}
-            labels={data?.labels ?? []}
-            value={filters}
-            onChange={setFilters}
-          />
-          <p className="calendar-help">
-            Deadlines are date markers. Sessions reserve time. Use Schedule task
-            or open a session to move or resize it with the form.
-          </p>
+          {query.isPending && <p role="status">Loading timetable…</p>}
           {query.isError && (
             <p role="alert" className="error">
               Unable to load timetable.{' '}
@@ -385,9 +315,11 @@ export function Timetable({
               {mutation.error.message}
             </p>
           )}
-          <p role="status" className="timetable-notice">
-            {notice}
-          </p>
+          {notice && (
+            <p role="status" className="timetable-notice">
+              {notice}
+            </p>
+          )}
           {effectiveView === 'agenda' ? (
             <CalendarAgenda
               dates={dates}
@@ -414,21 +346,62 @@ export function Timetable({
                 timeZone={preferences.timezone}
                 allDaySlot
                 allDayText="Deadlines"
+                dayHeaderFormat={{ weekday: 'short', day: 'numeric' }}
+                dayHeaderContent={(info) => (
+                  <div
+                    className={`calendar-day-heading${info.isToday ? ' is-today' : ''}`}
+                  >
+                    <span>{info.weekdayText}</span>
+                    <strong>{info.dayNumberText}</strong>
+                  </div>
+                )}
+                dayHeaderClass="calendar-day-cell"
+                slotHeaderInnerClass="calendar-time-label"
+                allDayHeaderInnerClass="calendar-all-day-label"
+                slotLaneClass="calendar-time-lane"
+                slotMinHeight={26}
+                slotHeaderFormat={{
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }}
+                eventTimeFormat={{
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }}
+                eventInnerClass="calendar-event-inner"
+                eventContent={(info) => (
+                  <div
+                    className={`calendar-event-content${info.isShort ? ' is-short' : ''}`}
+                  >
+                    <span className="calendar-event-time">
+                      {info.event.extendedProps.deadline
+                        ? 'Deadline'
+                        : info.timeText}
+                      {info.event.extendedProps.deadline && info.timeText
+                        ? ` · ${info.timeText}`
+                        : ''}
+                    </span>
+                    <strong>{info.event.title}</strong>
+                  </div>
+                )}
                 nowIndicator
                 scrollTime="08:00:00"
                 slotDuration="00:30:00"
                 snapDuration="00:15:00"
                 editable={!mutation.isPending}
-                droppable={!mutation.isPending}
                 eventResizableFromStart
                 eventInteractive
                 eventMinHeight={30}
                 events={[
                   ...markers.map((card) => ({
                     id: `deadline-${card.id}`,
-                    title: `Deadline${card.due_time ? ` ${card.due_time}` : ''}: ${card.title}${card.completed_at ? ' · Completed' : ''}`,
-                    start: card.due_date!,
-                    allDay: true,
+                    title: `${card.title}${card.completed_at ? ' · Completed' : ''}`,
+                    start: card.due_time
+                      ? `${card.due_date}T${card.due_time}:00`
+                      : card.due_date!,
+                    allDay: !card.due_time,
                     editable: false,
                     className: 'calendar-deadline',
                     extendedProps: { cardId: card.id, deadline: true },
@@ -458,17 +431,6 @@ export function Timetable({
                     }
                   }),
                 ]}
-                drop={(info) => {
-                  const cardId = info.draggedEl.dataset.taskId
-                  if (cardId && !info.allDay && !mutation.isPending)
-                    mutation.mutate({
-                      kind: 'save',
-                      id: crypto.randomUUID(),
-                      cardId,
-                      start: info.date.toISOString(),
-                      end: new Date(+info.date + 3600000).toISOString(),
-                    })
-                }}
                 eventDidMount={(info) => {
                   const session = sessions.find(
                     (session) => session.id === info.event.id,
@@ -507,7 +469,7 @@ export function Timetable({
       {draft && (
         <SessionEditor
           draft={draft}
-          cards={data?.cards ?? []}
+          cards={cards}
           boards={data?.boards ?? []}
           timezone={preferences.timezone}
           sessions={data?.sessions ?? []}

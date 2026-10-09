@@ -35,7 +35,14 @@ export function CalendarAgenda({
         const daySessions = sessionsOnDate(sessions, date, timezone).sort(
           (a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at),
         )
-        const deadlines = cards.filter((card) => card.due_date === date)
+        const deadlines = cards
+          .filter((card) => card.due_date === date)
+          .sort(
+            (a, b) =>
+              (a.due_time ?? '').localeCompare(b.due_time ?? '') ||
+              a.title.localeCompare(b.title),
+          )
+        if (!daySessions.length && !deadlines.length) return null
         return (
           <section
             className="agenda-day"
@@ -60,7 +67,7 @@ export function CalendarAgenda({
                 aria-label={`Deadline ${card.title}${card.due_time ? ` at ${card.due_time}` : ''}${card.completed_at ? ' Completed' : ''}`}
                 onClick={() => onTask(card)}
               >
-                <span>
+                <span className="agenda-time">
                   Deadline{card.due_time ? ` · ${card.due_time}` : ''}
                 </span>
                 <strong>{card.title}</strong>
@@ -81,7 +88,7 @@ export function CalendarAgenda({
                   onClick={() => onSession(session)}
                   aria-label={`Edit session ${card.title}, ${sessionTimeLabel(session.starts_at, timezone)} to ${sessionTimeLabel(session.ends_at, timezone)}${card.completed_at ? ', completed' : ''}${conflicts.has(session.id) ? ', overlap' : ''}`}
                 >
-                  <span>
+                  <span className="agenda-time">
                     {time(session.starts_at, date)} –{' '}
                     {time(session.ends_at, date)}
                   </span>
@@ -101,12 +108,14 @@ export function CalendarAgenda({
                 </button>
               )
             })}
-            {!daySessions.length && !deadlines.length && (
-              <p className="muted">No sessions or deadlines.</p>
-            )}
           </section>
         )
       })}
+      {!dates.some(
+        (date) =>
+          cards.some((card) => card.due_date === date) ||
+          sessionsOnDate(sessions, date, timezone).length,
+      ) && <p className="muted">No tasks for these dates.</p>}
     </div>
   )
 }

@@ -35,9 +35,15 @@ test('calendar preferences persist, retain failed drafts, and require reviewing 
   await expect(
     page.getByRole('combobox', { name: 'View', exact: true }),
   ).toHaveValue('agenda')
-  await expect(page.locator('.agenda-day').first()).toContainText(
-    'Sunday 4 Oct',
-  )
+  await expect(
+    page.getByRole('heading', {
+      name: '4 – 10 Oct 2026',
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('No tasks for these dates.', { exact: true }),
+  ).toBeVisible()
   await page.reload()
   await page.getByRole('button', { name: 'Timetable', exact: true }).click()
   await page
@@ -154,7 +160,9 @@ test('uses the saved timezone for session writes and retains the task after remo
   expect(removed.cards).toEqual(initial.cards)
   expect(removed.sessions).toEqual([])
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('[data-task-id]')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Schedule task', exact: true }).click()
   await expect(
-    page.locator('[data-task-id]').filter({ hasText: 'Timezone task' }),
-  ).toBeVisible()
+    page.getByRole('combobox', { name: 'Task', exact: true }),
+  ).toContainText('Timezone task')
 })

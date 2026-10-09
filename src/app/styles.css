@@ -1422,50 +1422,18 @@ fieldset {
 }
 
 .timetable-layout {
-  display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  display: flex;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
-.unscheduled-panel {
-  padding: 20px 16px;
-  border-right: 1px solid var(--line);
-  overflow: auto;
-  background: var(--surface);
-}
-.unscheduled-panel h2,
-.timetable-toolbar h2 {
-  font-size: 15px;
-  margin: 0;
-}
-.unscheduled-panel p,
-.timetable-timezone,
-.scheduling-task span {
-  font-size: 12px;
-}
-.scheduling-tasks {
-  display: grid;
-  gap: 8px;
-  margin-top: 16px;
-}
-.scheduling-task {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
-  text-align: left;
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  padding: 12px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  cursor: grab;
-}
-.scheduling-task span {
-  color: var(--muted);
+.timetable-board-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .timetable-calendar {
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -1487,8 +1455,25 @@ fieldset {
   gap: 8px;
 }
 .timetable-toolbar {
-  justify-content: space-between;
   flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+.timetable-toolbar h2 {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+.timetable-toolbar .calendar-filters {
+  margin: 0;
+}
+.timetable-navigation button {
+  min-width: 36px;
+}
+.timetable-navigation svg {
+  width: 16px;
+  height: 16px;
 }
 .timetable-toolbar label {
   display: flex;
@@ -1498,9 +1483,6 @@ fieldset {
 }
 .timetable-toolbar select {
   width: auto;
-}
-.timetable-timezone {
-  margin: 10px 0 0;
 }
 .timetable-notice {
   font-size: 12px;
@@ -1528,20 +1510,19 @@ fieldset {
     flex-direction: column;
     overflow: auto;
   }
-  .unscheduled-panel {
-    max-height: 220px;
-    flex-shrink: 0;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
   .timetable-calendar {
-    min-height: 600px;
-    flex-shrink: 0;
+    flex: 1;
     padding: 12px;
   }
   .timetable-toolbar h2 {
     order: 3;
-    width: 100%;
+    flex: 0 0 100%;
+  }
+  .timetable-schedule span {
+    display: none;
+  }
+  .workspace-header:has(+ .timetable-layout) {
+    flex-wrap: wrap;
   }
 }
 
