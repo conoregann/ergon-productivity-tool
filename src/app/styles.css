@@ -1527,6 +1527,14 @@ fieldset {
   color: var(--text);
   overflow-wrap: anywhere;
 }
+.card-label-tab {
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.4;
+}
 .label-dot {
   width: 8px;
   height: 8px;

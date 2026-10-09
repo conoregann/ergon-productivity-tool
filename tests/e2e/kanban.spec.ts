@@ -855,7 +855,14 @@ test('manages labels and combines search, label, priority and completion filters
   await page.getByRole('checkbox', { name: 'Completed', exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   const task = page.getByRole('button', { name: 'Open task Prepare proposal' })
-  await expect(task.getByText('Client', { exact: true })).toBeVisible()
+  const labelTab = task.getByText('Client', { exact: true })
+  await expect(labelTab).toBeVisible()
+  await expect(labelTab).toHaveCSS('background-color', 'rgb(18, 90, 188)')
+  await expect(labelTab).toHaveCSS('color', 'rgb(255, 255, 255)')
+  await page.screenshot({
+    path: testInfo.outputPath('card-label-tabs.png'),
+    fullPage: true,
+  })
   await page
     .getByRole('button', { name: 'Add task to To do', exact: true })
     .click()

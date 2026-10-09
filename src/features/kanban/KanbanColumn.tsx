@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { Rename } from '../../app/Rename'
+import { labelTextColor } from './appearance'
 import type { Card, Column, Label } from '../../domain/kanban'
 
 type Props = {
@@ -47,22 +48,24 @@ export function CardContent({
           </span>
         )}
       </div>
-      {card.description && (
-        <p className="task-description">{card.description}</p>
-      )}
       {!!labels.length && (
         <div className="task-labels">
           {labels.map((label) => (
-            <span className="task-label" key={label.id}>
-              <span
-                aria-hidden="true"
-                className="label-dot"
-                style={{ backgroundColor: label.color }}
-              />
+            <span
+              className="task-label card-label-tab"
+              key={label.id}
+              style={{
+                backgroundColor: label.color,
+                color: labelTextColor(label.color),
+              }}
+            >
               {label.name}
             </span>
           ))}
         </div>
+      )}
+      {card.description && (
+        <p className="task-description">{card.description}</p>
       )}
       <div className="task-meta">
         {card.completed_at && (
