@@ -2,6 +2,8 @@
 
 ## Supabase
 
+For an existing project, follow the [step-by-step migration guide](migrations.md).
+
 1. Create a Supabase project and retain its project reference, URL, and publishable key. Keep database credentials and secret/service-role keys outside the repository and frontend.
 2. With the Supabase CLI installed, run from this repository:
 
@@ -14,7 +16,7 @@
 
    Local CLI configuration is checked in; skip `supabase init` for this checkout. The versioned migrations in this repository are the authoritative schema. Link only the intended project, never an unrelated existing database.
 
-   For updates, inspect `supabase migration list --linked` and preview `supabase db push --linked --dry-run`, then apply pending migrations before running the updated frontend. The labels UI requires migration `20261009000200`; JSON portability requires `20261009000300`; scheduling requires `20261009000400`; task saves with deadline times require `20261009000500` (including label edits from the current frontend). The expanded board colour palette requires `20261009000600`. A pre-label snapshot is normalized for board reads, but the new writes still require the matching database functions.
+   For updates, inspect `supabase migration list --linked` and preview `supabase db push --linked --dry-run`, then apply pending migrations before running the updated frontend. The labels UI requires migration `20261009000200`; JSON portability requires `20261009000300`; scheduling requires `20261009000400`; task saves with deadline times require `20261009000500` (including label edits from the current frontend). The expanded board colour palette requires `20261009000600`; board sharing requires `20261009000700`. A pre-label snapshot is normalized for board reads, but the new writes still require the matching database functions.
 
 3. Enable the GitHub provider under Authentication → Sign In / Providers. Create a GitHub OAuth application whose authorization callback URL is the callback shown by Supabase (`https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`). Enter its client ID and secret into Supabase, never into the React app.
 4. Set the Supabase Site URL to the production Vercel origin. Add `http://localhost:5173` to the redirect allowlist for local development. Allow only specific controlled preview URLs when testing OAuth previews. The app requests its current origin as the post-auth redirect.
@@ -42,3 +44,5 @@ With `.env.local` configured and the Supabase CLI authenticated to the intended 
 This check does not exercise the GitHub browser consent/callback or Vercel. Verify those manually: sign in with GitHub, reload the application, confirm the account and board remain available, sign out, and confirm private data disappears. Repeat on the production origin with a second GitHub account.
 
 Browser workflow tests use an isolated simulated backend; database tests execute the migrations. Both are necessary, and neither substitutes for the hosted and real OAuth checks.
+
+For board sharing, create a viewer link and open it signed out, then change it to editor and sign in as a second user. Verify card/column/label edits, owner-only board settings, and isolation from other boards and personal calendar data. Disable sharing and verify new reads and edits fail; re-enable it and verify the previous link stays invalid. Confirm GitHub sign-in returns to the shared board in the same browser tab. Link access includes archived board content.
