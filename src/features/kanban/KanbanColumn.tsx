@@ -189,6 +189,7 @@ export function KanbanColumn({
   } = useSortable({
     id: 'column:' + column.id,
     disabled,
+    transition: { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
     data: { kind: 'column', columnId: column.id, label: column.title },
   })
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -199,8 +200,11 @@ export function KanbanColumn({
   return (
     <section
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`kanban-column ${isDragging ? 'is-dragging' : ''}`}
+      style={{
+        transform: isDragging ? undefined : CSS.Translate.toString(transform),
+        transition,
+      }}
+      className={`kanban-column ${isDragging ? 'column-drag-source' : ''}`}
       aria-label={column.title}
     >
       <header className="column-header">

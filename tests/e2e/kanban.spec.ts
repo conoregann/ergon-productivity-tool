@@ -900,3 +900,35 @@ test('manages labels and combines search, label, priority and completion filters
     page.getByRole('button', { name: 'Open task Other task' }),
   ).toBeVisible()
 })
+
+test('keeps snapping suspended throughout column movement and its drop animation', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  const handle = page.getByRole('button', { name: 'Drag column To do' })
+  await handle.focus()
+  await handle.press('Space')
+  await expect(page.locator('.column-drag-preview')).toBeVisible()
+  await expect(page.locator('.kanban-grid')).toHaveCSS(
+    'scroll-snap-type',
+    'none',
+  )
+  await handle.press('ArrowRight')
+  await page.screenshot({ path: testInfo.outputPath('column-movement.png') })
+  await handle.press('Space')
+  await expect(page.locator('.kanban-grid > section').first()).toHaveAttribute(
+    'aria-label',
+    'In progress',
+  )
+  await expect(page.locator('.column-drag-preview')).toHaveCount(0)
+  await expect(page.locator('.kanban-grid')).toHaveCSS('scroll-snap-type', 'x')
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(page.locator('.kanban-grid > section').first()).toHaveAttribute(
+    'aria-label',
+    'In progress',
+  )
+})

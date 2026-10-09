@@ -22,7 +22,7 @@ import type { ReactNode } from 'react'
 import { Plus, MoreHorizontal } from 'lucide-react'
 import { FilterPanel } from '../../app/FilterPanel'
 import { Rename } from '../../app/Rename'
-import type { Board, Card, Command } from '../../domain/kanban'
+import type { Board, Card, Column, Command } from '../../domain/kanban'
 import { ConflictError } from './api'
 import { Editor } from './Editor'
 import type { EditorState } from './Editor'
@@ -64,6 +64,9 @@ export function Kanban({
 }) {
   const { query, mutation } = useBoard(ownerId, boardId)
   const [editor, setEditor] = useState<EditorState | null>(null)
+  const [dragColumn, setDragColumn] = useState<Column | null>(null)
+  const [sorting, setSorting] = useState(false)
+  const dropTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [dragCard, setDragCard] = useState<Card | null>(null)
   const [dropTarget, setDropTarget] = useState<string | null>(null)
   const [reducedMotion, setReducedMotion] = useState(
@@ -89,6 +92,17 @@ export function Kanban({
     media.addEventListener('change', update)
     return () => media.removeEventListener('change', update)
   }, [])
+  useEffect(() => () => clearTimeout(dropTimer.current), [])
+  function finishDrag() {
+    setDragCard(null)
+    setDragColumn(null)
+    setDropTarget(null)
+    clearTimeout(dropTimer.current)
+    dropTimer.current = setTimeout(
+      () => setSorting(false),
+      reducedMotion ? 0 : 240,
+    )
+  }
   function openEditor(next: EditorState) {
     returnFocus.current = document.activeElement as HTMLElement
     mutation.reset()
@@ -158,8 +172,7 @@ export function Kanban({
     return snapshot.labels.filter((label) => ids.has(label.id))
   }
   function onDragEnd({ active, over }: DragEndEvent) {
-    setDragCard(null)
-    setDropTarget(null)
+    finishDrag()
     if (!over || active.id === over.id || disabled) return
     const source = active.data.current
     const target = over.data.current
@@ -404,16 +417,19 @@ export function Kanban({
           sensors={sensors}
           collisionDetection={collisionDetection}
           onDragStart={({ active }) => {
+            clearTimeout(dropTimer.current)
+            setSorting(true)
+            setDragColumn(
+              columns.find((column) => active.id === 'column:' + column.id) ??
+                null,
+            )
             const card = cards.find((card) => active.id === 'card:' + card.id)
             setDragCard(card ?? null)
           }}
           onDragOver={({ over }) =>
             setDropTarget(over ? String(over.id) : null)
           }
-          onDragCancel={() => {
-            setDragCard(null)
-            setDropTarget(null)
-          }}
+          onDragCancel={finishDrag}
           onDragEnd={onDragEnd}
           accessibility={{
             announcements: {
@@ -441,7 +457,7 @@ export function Kanban({
             strategy={horizontalListSortingStrategy}
           >
             <div
-              className={`kanban-grid live-grid ${dragCard ? 'is-sorting' : ''}`}
+              className={`kanban-grid live-grid ${sorting ? 'is-sorting' : ''}`}
               role="group"
               aria-label="Board columns"
               tabIndex={0}
@@ -517,10 +533,46 @@ export function Kanban({
                   }
             }
           >
-            {dragCard && (
-              <div className="task-card drag-preview" aria-hidden="true">
-                <CardContent card={dragCard} labels={labelsForCard(dragCard)} />
-              </div>
+            {dragColumn ? (
+              <section
+                className="kanban-column column-drag-preview"
+                aria-hidden="true"
+              >
+                <header className="column-header">
+                  <h3>{dragColumn.title}</h3>
+                  <span className="count">
+                    {
+                      visibleCards.filter(
+                        (card) => card.column_id === dragColumn.id,
+                      ).length
+                    }
+                  </span>
+                </header>
+                <div className="column-dropzone">
+                  <ul className="task-list">
+                    {visibleCards
+                      .filter((card) => card.column_id === dragColumn.id)
+                      .sort((a, b) => a.position - b.position)
+                      .map((card) => (
+                        <li className="task-card" key={card.id}>
+                          <CardContent
+                            card={card}
+                            labels={labelsForCard(card)}
+                          />
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              </section>
+            ) : (
+              dragCard && (
+                <div className="task-card drag-preview" aria-hidden="true">
+                  <CardContent
+                    card={dragCard}
+                    labels={labelsForCard(dragCard)}
+                  />
+                </div>
+              )
             )}
           </DragOverlay>
         </DndContext>
