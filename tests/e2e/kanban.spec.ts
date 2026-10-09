@@ -1026,3 +1026,58 @@ test('keeps snapping suspended throughout column movement and its drop animation
     'In progress',
   )
 })
+
+test('keeps task input focus rings inside the fields in new and edit dialogs', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  for (const creating of [true, false]) {
+    await page
+      .getByRole('button', {
+        name: creating ? 'Add task to To do' : 'Open task Prepare proposal',
+        exact: true,
+      })
+      .click()
+    const dialog = page.getByRole('dialog', {
+      name: creating ? 'New task' : 'Edit task',
+    })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.locator('h2')).toHaveText(
+      creating ? 'New task' : 'Edit task',
+    )
+    await dialog.getByLabel('Due date', { exact: true }).fill('2026-10-09')
+    for (const name of [
+      'Title',
+      'Description',
+      'Priority',
+      'Due date',
+      'Due time',
+    ]) {
+      const field =
+        name === 'Description'
+          ? dialog.getByRole('textbox', { name, exact: true })
+          : dialog.getByLabel(name, { exact: true })
+      await field.focus()
+      await expect(field).toBeFocused()
+      const ring = await field.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          width: parseFloat(style.outlineWidth),
+          offset: parseFloat(style.outlineOffset),
+        }
+      })
+      expect(ring.width).toBeGreaterThan(0)
+      expect(ring.width + ring.offset).toBeLessThanOrEqual(0)
+    }
+    await dialog.getByLabel('Title', { exact: true }).focus()
+    await page.screenshot({
+      path: testInfo.outputPath(
+        creating ? 'new-task-focus.png' : 'edit-task-focus.png',
+      ),
+      fullPage: true,
+    })
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+  }
+})

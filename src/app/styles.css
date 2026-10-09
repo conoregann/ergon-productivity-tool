@@ -883,6 +883,9 @@ fieldset {
 .task-editor .form-field {
   color: var(--text);
 }
+.task-editor :is(input, textarea, select):focus-visible {
+  outline-offset: -2px;
+}
 .task-editor textarea {
   min-height: 88px;
   line-height: 1.6;
