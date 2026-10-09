@@ -538,6 +538,13 @@ test('previews and persists board backgrounds with rollback on failed writes', a
   const backend = await installBackend(page)
   await createWorkspace(page)
   await boardSettings(page)
+  for (const name of ['Forest', 'Orange', 'Gold', 'Teal', 'Grey']) {
+    await page.getByRole('button', { name: `${name} background` }).click()
+    await expect(page.locator('.background-preview')).toHaveAttribute(
+      'data-background',
+      name.toLowerCase(),
+    )
+  }
   await page.getByRole('button', { name: 'Lavender background' }).click()
   await expect(page.locator('.background-preview')).toHaveAttribute(
     'data-background',
@@ -1080,4 +1087,44 @@ test('keeps task input focus rings inside the fields in new and edit dialogs', a
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
   }
+})
+
+test('persists added board colours across reloads, gallery previews, and dark mode', async ({
+  page,
+}, testInfo) => {
+  await installBackend(page)
+  await createWorkspace(page)
+  await boardSettings(page)
+  await page.getByRole('button', { name: 'Teal background' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('.board-canvas')).toHaveCSS(
+    'background-color',
+    'rgb(233, 244, 244)',
+  )
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(page.locator('.board-canvas')).toHaveAttribute(
+    'data-background',
+    'teal',
+  )
+  await overview(page)
+  await page.getByRole('button', { name: 'Use dark mode' }).click()
+  await expect(page.locator('.board-miniature')).toHaveCSS(
+    'background-color',
+    'rgb(29, 43, 44)',
+  )
+  await page
+    .getByRole('button', { name: 'Open board Personal projects' })
+    .click()
+  await expect(page.locator('.board-canvas')).toHaveCSS(
+    'background-color',
+    'rgb(29, 43, 44)',
+  )
+  await page.screenshot({
+    path: testInfo.outputPath('teal-board-dark.png'),
+    fullPage: true,
+  })
 })

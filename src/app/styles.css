@@ -1214,6 +1214,21 @@ fieldset {
 [data-background='sage'] {
   --board-background: #eff4ed;
 }
+[data-background='forest'] {
+  --board-background: #eaf3ee;
+}
+[data-background='orange'] {
+  --board-background: #faf0e7;
+}
+[data-background='gold'] {
+  --board-background: #f8f3df;
+}
+[data-background='teal'] {
+  --board-background: #e9f4f4;
+}
+[data-background='grey'] {
+  --board-background: #eef0f3;
+}
 :root[data-theme='dark'] [data-background='sand'] {
   --board-background: #28241f;
 }
@@ -1228,6 +1243,21 @@ fieldset {
 }
 :root[data-theme='dark'] [data-background='sage'] {
   --board-background: #222a23;
+}
+:root[data-theme='dark'] [data-background='forest'] {
+  --board-background: #1e2b24;
+}
+:root[data-theme='dark'] [data-background='orange'] {
+  --board-background: #30251e;
+}
+:root[data-theme='dark'] [data-background='gold'] {
+  --board-background: #2d291b;
+}
+:root[data-theme='dark'] [data-background='teal'] {
+  --board-background: #1d2b2c;
+}
+:root[data-theme='dark'] [data-background='grey'] {
+  --board-background: #25282d;
 }
 .board-canvas,
 .background-preview,
@@ -1246,7 +1276,7 @@ fieldset {
 }
 .background-swatches {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 8px;
 }
 .background-swatch {

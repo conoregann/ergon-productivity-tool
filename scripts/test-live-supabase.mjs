@@ -193,7 +193,7 @@ try {
       p_version: snapshot.board.version,
       p_title: 'Temporary verification board',
       p_archived: false,
-      p_background: 'lavender',
+      p_background: 'teal',
     }),
     'Set board background',
   )
@@ -201,7 +201,7 @@ try {
     await alice.rpc('get_board_snapshot', { p_board_id: boardId }),
     'Verify board background',
   )
-  assert.equal(snapshot.board.background, 'lavender')
+  assert.equal(snapshot.board.background, 'teal')
   assert.equal(snapshot.cardLabels[0].label_id, labelId)
   const sessionId = randomUUID()
   checked(

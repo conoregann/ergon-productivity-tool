@@ -5,4 +5,9 @@ export const boardBackgrounds = [
   { value: 'lavender', label: 'Lavender' },
   { value: 'blue', label: 'Blue' },
   { value: 'sage', label: 'Sage' },
+  { value: 'forest', label: 'Forest' },
+  { value: 'orange', label: 'Orange' },
+  { value: 'gold', label: 'Gold' },
+  { value: 'teal', label: 'Teal' },
+  { value: 'grey', label: 'Grey' },
 ]

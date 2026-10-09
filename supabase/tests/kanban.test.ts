@@ -371,6 +371,24 @@ it('persists priority, rejects invalid tiers atomically, and denies another user
   ).rejects.toThrow(/Board unavailable/)
 })
 
+it.each(['forest', 'orange', 'gold', 'teal', 'grey'])(
+  'persists the %s board background preset',
+  async (background) => {
+    await rpc('save_board', [
+      board,
+      await revision(),
+      'Work',
+      false,
+      background,
+    ])
+    const result = await db.query(
+      'select background from public.boards where id = $1',
+      [board],
+    )
+    expect(result.rows).toEqual([{ background }])
+  },
+)
+
 it('persists board background, rejects invalid colours, and isolates appearance writes', async () => {
   const current = await revision()
   await expect(

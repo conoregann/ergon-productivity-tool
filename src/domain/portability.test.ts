@@ -152,3 +152,12 @@ it('accepts older exports without due times and validates optional deadline time
   Reflect.deleteProperty(legacy.cards[0]!, 'due_time')
   expect(validateWorkspaceExport(legacy)).toEqual(legacy)
 })
+
+it.each(['forest', 'orange', 'gold', 'teal', 'grey'])(
+  'round trips the %s board background through JSON',
+  (background) => {
+    const data = structuredClone(workspaceFixture)
+    data.boards[0]!.background = background
+    expect(parseWorkspaceExport(JSON.stringify(data))).toEqual(data)
+  },
+)

@@ -73,7 +73,7 @@ beforeAll(async () => {
   }
   await asUser(alice)
   await db.exec(`
-    insert into public.boards(id, title, background) values ('10000000-0000-0000-0000-000000000001', 'History', 'sage');
+    insert into public.boards(id, title, background) values ('10000000-0000-0000-0000-000000000001', 'History', 'teal');
     insert into public.boards(title) values ('Empty');
     insert into public.columns(id, board_id, title, position) values ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Done', 3);
     insert into public.cards(id, board_id, column_id, title, description, position, priority, due_date, due_time, completed_at, archived_at)
