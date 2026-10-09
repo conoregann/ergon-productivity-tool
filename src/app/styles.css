@@ -1512,11 +1512,14 @@ fieldset {
   }
 }
 
-.task-labels {
+.task-markers {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 50%;
+  flex-shrink: 0;
 }
 .task-label {
   display: inline-flex;
@@ -1528,12 +1531,10 @@ fieldset {
   overflow-wrap: anywhere;
 }
 .card-label-tab {
-  max-width: 100%;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 550;
-  line-height: 1.4;
+  width: 40px;
+  height: 19px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 .label-dot {
   width: 8px;

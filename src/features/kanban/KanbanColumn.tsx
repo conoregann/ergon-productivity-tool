@@ -14,7 +14,6 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { Rename } from '../../app/Rename'
-import { labelTextColor } from './appearance'
 import type { Card, Column, Label } from '../../domain/kanban'
 
 type Props = {
@@ -41,29 +40,27 @@ export function CardContent({
     <>
       <div className="task-heading">
         <h4>{card.title}</h4>
-        {card.priority !== 'none' && (
-          <span className={`priority priority-${card.priority}`}>
-            <span aria-hidden="true" className="priority-dot" />
-            {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
-          </span>
+        {(card.priority !== 'none' || labels.length > 0) && (
+          <div className="task-markers">
+            {card.priority !== 'none' && (
+              <span className={`priority priority-${card.priority}`}>
+                <span aria-hidden="true" className="priority-dot" />
+                {card.priority.charAt(0).toUpperCase() + card.priority.slice(1)}
+              </span>
+            )}
+            {labels.map((label) => (
+              <span
+                className="card-label-tab"
+                key={label.id}
+                role="img"
+                aria-label={`Label: ${label.name}`}
+                title={label.name}
+                style={{ backgroundColor: label.color }}
+              />
+            ))}
+          </div>
         )}
       </div>
-      {!!labels.length && (
-        <div className="task-labels">
-          {labels.map((label) => (
-            <span
-              className="task-label card-label-tab"
-              key={label.id}
-              style={{
-                backgroundColor: label.color,
-                color: labelTextColor(label.color),
-              }}
-            >
-              {label.name}
-            </span>
-          ))}
-        </div>
-      )}
       {card.description && (
         <p className="task-description">{card.description}</p>
       )}

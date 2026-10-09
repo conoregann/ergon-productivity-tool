@@ -855,10 +855,16 @@ test('manages labels and combines search, label, priority and completion filters
   await page.getByRole('checkbox', { name: 'Completed', exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   const task = page.getByRole('button', { name: 'Open task Prepare proposal' })
-  const labelTab = task.getByText('Client', { exact: true })
+  const labelTab = task.getByRole('img', { name: 'Label: Client', exact: true })
   await expect(labelTab).toBeVisible()
   await expect(labelTab).toHaveCSS('background-color', 'rgb(18, 90, 188)')
-  await expect(labelTab).toHaveCSS('color', 'rgb(255, 255, 255)')
+  await expect(labelTab).toHaveText('')
+  await expect(labelTab).toHaveAttribute('title', 'Client')
+  const markerBounds = await labelTab.boundingBox()
+  const priorityBounds = await task.locator('.priority').boundingBox()
+  expect(markerBounds!.height).toBe(priorityBounds!.height)
+  expect(markerBounds!.y).toBe(priorityBounds!.y)
+  await expect(labelTab).toHaveCSS('border-radius', '4px')
   await page.screenshot({
     path: testInfo.outputPath('card-label-tabs.png'),
     fullPage: true,
@@ -927,7 +933,9 @@ test('manages labels and combines search, label, priority and completion filters
   await page
     .getByRole('button', { name: 'Open board Personal projects' })
     .click()
-  await expect(task.getByText('Client', { exact: true })).toBeVisible()
+  await expect(
+    task.getByRole('img', { name: 'Label: Client', exact: true }),
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Manage labels', exact: true }).click()
   await page
     .getByRole('button', { name: 'Edit label Client', exact: true })
@@ -950,11 +958,15 @@ test('manages labels and combines search, label, priority and completion filters
   await page.getByLabel('Label name', { exact: true }).fill('Customer')
   await page.getByRole('button', { name: 'Save label', exact: true }).click()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
-  await expect(task.getByText('Customer', { exact: true })).toBeVisible()
+  await expect(
+    task.getByRole('img', { name: 'Label: Customer', exact: true }),
+  ).toBeVisible()
   await task.click()
   await page.getByRole('checkbox', { name: 'Customer', exact: true }).uncheck()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(task.getByText('Customer', { exact: true })).toHaveCount(0)
+  await expect(
+    task.getByRole('img', { name: 'Label: Customer', exact: true }),
+  ).toHaveCount(0)
   await task.click()
   await page.getByRole('checkbox', { name: 'Customer', exact: true }).check()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
@@ -967,7 +979,9 @@ test('manages labels and combines search, label, priority and completion filters
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Delete label', exact: true }).click()
   await page.getByRole('button', { name: 'Close', exact: true }).click()
-  await expect(task.getByText('Customer', { exact: true })).toHaveCount(0)
+  await expect(
+    task.getByRole('img', { name: 'Label: Customer', exact: true }),
+  ).toHaveCount(0)
   await page.getByRole('button', { name: /^Filters/ }).click()
   await expect(
     page.getByRole('radio', { name: 'All labels', exact: true }),
