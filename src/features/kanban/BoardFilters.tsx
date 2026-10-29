@@ -56,7 +56,7 @@ export function BoardFilters({
         <header className="board-filter-heading">
           <div>
             <h2>Filter tasks</h2>
-            <p className="muted">Find the work you want to focus on.</p>
+            <p className="muted">{count ? `${count} active` : 'All tasks'}</p>
           </div>
           <button
             type="button"
@@ -111,7 +111,7 @@ export function BoardFilters({
           </fieldset>
           <fieldset className="board-filter-group" aria-label="Priority filter">
             <legend>Priority</legend>
-            <div className="filter-choices">
+            <div className="filter-choices priority-choices">
               {(
                 [
                   ['', 'All priorities'],

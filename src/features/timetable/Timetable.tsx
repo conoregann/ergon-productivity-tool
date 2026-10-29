@@ -107,7 +107,8 @@ export function Timetable({
   const query = useQuery({ queryKey, queryFn: () => loadTimetable() })
   const [mobile, setMobile] = useState(window.innerWidth < 760)
   const [view, setView] = useState('week')
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [openedAt] = useState(() => new Date().toISOString())
+  const [selectedDate, setDate] = useState<string | null>(null)
   const [filters, setFilters] = useState<Filters>({
     boardId,
     labelId: '',
@@ -146,6 +147,8 @@ export function Timetable({
   }, [query.data?.preferences])
   const data = query.data
   const preferences = data?.preferences ?? defaultPreferences
+  const date =
+    selectedDate ?? localDateTime(openedAt, preferences.timezone).slice(0, 10)
   const effectiveView = mobile ? 'agenda' : view
   const dates = visibleDates(date, {
     ...preferences,

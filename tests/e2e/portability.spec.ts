@@ -50,9 +50,15 @@ test('downloads JSON, validates files, previews and imports copies with keyboard
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(workspaceFixture)),
   })
-  await expect(dialog).toContainText(
-    'Ready to import: boards: 1, columns: 1, cards: 1, labels: 1, sessions: 1',
-  )
+  await expect(
+    dialog.getByRole('heading', { name: 'Ready to import' }),
+  ).toBeVisible()
+  for (const label of ['Boards', 'Columns', 'Cards', 'Labels', 'Sessions']) {
+    const count = dialog
+      .locator('.portability-counts > div')
+      .filter({ hasText: label })
+    await expect(count.locator('dd')).toHaveText('1')
+  }
   expect(imported).toBeNull()
   await page.screenshot({ path: testInfo.outputPath('import-preview.png') })
   expect(

@@ -1,10 +1,201 @@
+.editor-dialog.portability-dialog {
+  width: min(620px, calc(100dvw - 32px));
+  padding: 0;
+  border-radius: 8px;
+}
+.portability-dialog .dialog-header {
+  margin: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.portability-dialog .dialog-header h2 {
+  font-size: 16px;
+}
 .portability-content {
+  min-width: 0;
+}
+.portability-intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.portability-intro > svg {
+  width: 20px;
+  height: 20px;
+}
+.portability-section {
   display: grid;
   gap: 16px;
+  padding: 20px 24px;
 }
-.portability-content p {
-  margin: 0;
+.portability-export {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 24px;
 }
-.portability-content > button {
+.portability-export .portability-description {
+  grid-column: 1;
+}
+.portability-export > button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+.portability-section + .portability-section {
+  border-top: 1px solid var(--line);
+}
+.portability-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.portability-section-heading > svg {
+  margin-top: 2px;
+  color: var(--muted);
+}
+.portability-section-heading h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.portability-description {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.portability-section > button {
   justify-self: start;
+}
+.portability-file {
+  gap: 10px;
+  color: var(--text);
+}
+.portability-file input {
+  padding: 12px;
+  border-color: var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.portability-file input::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--input-line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+}
+.portability-file input::file-selector-button:hover {
+  background: var(--hover);
+}
+.portability-file input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.portability-preview {
+  display: grid;
+  gap: 16px;
+  padding-top: 4px;
+}
+.portability-preview h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 550;
+}
+.portability-preview h4 svg {
+  width: 15px;
+  height: 15px;
+}
+.portability-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 16px 0;
+  border-block: 1px solid var(--line);
+}
+.portability-counts > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+.portability-counts dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+.portability-counts dd {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+.portability-import-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.portability-import-action > span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.portability-import-action button {
+  flex-shrink: 0;
+}
+.portability-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.portability-feedback svg {
+  margin-top: 1px;
+  width: 16px;
+  height: 16px;
+}
+.portability-feedback.error {
+  margin: 0;
+  border-left: 0;
+  color: var(--destructive);
+}
+@media (max-width: 480px) {
+  .portability-dialog .dialog-header,
+  .portability-intro,
+  .portability-section,
+  .portability-feedback {
+    padding: 16px;
+  }
+  .portability-export {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .portability-export > button {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .portability-counts {
+    gap: 8px;
+  }
+  .portability-import-action {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
 }
