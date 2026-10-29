@@ -1,59 +1,53 @@
 # Ergon
 
-Private kanban task management and calendar planning. Tasks and scheduled work share one data model; deadlines and reserved work time remain distinct.
+**Organise tasks. Plan your time.**
 
-**Status:** authenticated kanban implemented. Boards, columns, and tasks support editing, archiving, whole-card dragging, keyboard/form controls, optimistic updates, and stale-edit recovery. Tasks have persisted priorities with colour-coded tier badges. Authentication opens first, with the GitHub profile and sign-out in a collapsible sidebar with board navigation and archives. Cards open a centred edit dialog; board and column names rename inline. Boards opens a gallery of real previews. Soft board backgrounds persist across devices, and light/dark mode persists locally. Task dragging uses an unclipped preview; deadlines support a styled keyboard-accessible date picker. PostgreSQL RLS and automated isolation tests protect private data. Scheduling, JSON portability, and PWA support remain later phases. Real GitHub OAuth and deployment require the verification steps in the deployment guide.
+A private kanban workspace with calendar planning. Deadlines, scheduled work, and task completion stay independent.
 
-## Local development
+## Features
 
-Requires Node 22 (see `.nvmrc`) and npm.
+- **Boards:** custom columns, draggable tasks, priorities, labels, search, filters, and archives.
+- **Planning:** daily/weekly calendars, mobile agenda, multiple sessions per task, timezone preferences, and overlap warnings.
+- **Sharing:** revocable viewer links and signed-in link editing.
+- **Portability:** validated JSON backups and imports that create copies.
+- **Interface:** light/dark themes, board backgrounds, keyboard sorting, and scheduling/placement forms.
+
+**Status:** core web workflows are implemented. PWA installation and the original unscheduled-task drag-to-calendar flow remain incomplete. Hosted acceptance and device/accessibility verification are release gates. See the [final review](docs/final-review.md).
+
+## Run locally
+
+Requires **Node 22** and a Supabase project.
 
 ```sh
 npm ci
 cp .env.example .env.local
-# Set the Supabase project URL and publishable key in .env.local.
+# Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.
 npm run dev
 ```
 
-Never put a Supabase service-role key or GitHub client secret in `VITE_*` variables. All Vite variables are public browser configuration.
+Apply the [database migrations](docs/migrations.md) and configure [GitHub OAuth](docs/deployment.md) before signing in. Frontend environment variables are public; keep service-role keys and OAuth secrets out of them.
+
+## Verify
 
 ```sh
-npm run check        # Format, lint, TypeScript, unit/auth and database tests, production build
+npm run check                    # Formatting, lint, types, unit/database tests, build
 npx playwright install chromium
-npm run test:e2e     # Production-build workflow and recovery tests on desktop and mobile
-npm run db:types     # Regenerate table and RPC types from SQL migrations
+npm run test:e2e                 # Desktop and mobile browser workflows
+npm run db:types                 # Regenerate types after schema changes
+npm run test:live                # Hosted integration; requires Supabase CLI login
 ```
 
-Database tests execute all migrations in PGlite (PostgreSQL compiled to WASM); only Supabase's identity plumbing is substituted. Docker is not required for these tests. They verify RLS, anonymous denial, cross-owner and cross-board foreign keys, date/session constraints, version conflicts, completion history, and cascading deletion. They do not substitute for live OAuth and full Supabase integration verification.
+Database tests run migrations in PGlite without Docker. Browser tests use a simulated backend. The hosted check creates and removes temporary users/data; real GitHub OAuth and production acceptance require separate verification.
 
-The local type generator produces scalar CRUD and RPC types. Before adding joined queries, replace it with the official `supabase gen types typescript --local` generator, which also emits relationship metadata.
+## Project map
 
-## Structure
+React · strict TypeScript · Vite · Supabase · TanStack Query · dnd-kit · FullCalendar.
 
-```text
-src/
-  app/                 Composition and styles
-  features/auth/       Session lifecycle and authentication UI
-  features/boards/     Board listing and creation
-  features/kanban/      Editing, movement and optimistic recovery
-  domain/              Pure kanban rules
-  lib/                 Supabase client, environment and generated types
-  test/                Test setup
-supabase/
-  migrations/          Versioned schema and ownership policies
-  tests/               PostgreSQL security/invariant tests
-tests/e2e/             Browser checks
-scripts/               Database types and hosted verification
-docs/                  Product scope, architecture, deployment and decisions
-.github/workflows/     Quality gates
-```
+| Location                  | Purpose                                                 |
+| ------------------------- | ------------------------------------------------------- |
+| `src/app`, `src/features` | Application shell and feature UI                        |
+| `src/domain`, `src/lib`   | Pure rules, data access infrastructure, generated types |
+| `supabase`                | Versioned migrations and isolation tests                |
+| `tests/e2e`               | Browser workflows and recovery checks                   |
 
-See [project overview](docs/project-overview.md), [architecture](docs/architecture.md), [deployment](docs/deployment.md), and [agent instructions](AGENTS.md).
-
-## Next milestones
-
-1. Complete real GitHub login/reload/logout and deployed multi-user acceptance checks.
-2. Calendar library spike, session CRUD, daily/weekly grids, and timezone/DST tests.
-3. Search, filters, deadlines, overlaps, and mobile agenda/forms.
-4. JSON export/import and installable PWA (application-shell caching only).
-5. Real multi-user isolation, cross-device concurrency, and failure-recovery release checks.
+[Scope](docs/project-overview.md) · [Architecture](docs/architecture.md) · [Deployment](docs/deployment.md) · [JSON format](docs/json-portability.md) · [Final review](docs/final-review.md)

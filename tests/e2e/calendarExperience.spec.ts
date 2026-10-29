@@ -87,6 +87,44 @@ async function setup(page: Page) {
   return control
 }
 
+test('opens the timetable on today in the saved timezone across a UTC date boundary', async ({
+  page,
+}, testInfo) => {
+  await page.clock.setFixedTime(new Date('2026-10-11T23:30:00Z'))
+  await installBackend(page)
+  await page.route(
+    'https://ergon.test/rest/v1/rpc/get_scheduling_snapshot',
+    (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          boards: [],
+          cards: [],
+          labels: [],
+          card_labels: [],
+          sessions: [],
+          preferences: {
+            timezone: 'Asia/Tokyo',
+            week_starts_on: 1,
+            calendar_view: 'day',
+            version: 1,
+          },
+        }),
+      }),
+  )
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Timetable', exact: true }).click()
+  await expect(page.locator('.timetable-timezone')).toContainText('Asia/Tokyo')
+  const heading = page.locator('.timetable-period h2')
+  const expected =
+    testInfo.project.name === 'mobile' ? /12.*18 Oct 2026/ : '12 Oct 2026'
+  await expect(heading).toHaveText(expected)
+  await page.getByRole('button', { name: 'Previous period' }).click()
+  await expect(heading).not.toHaveText(expected)
+  await page.getByRole('button', { name: 'Today', exact: true }).click()
+  await expect(heading).toHaveText(expected)
+})
+
 test('agenda combines filters, retains hidden overlap warnings, and preserves completed session history', async ({
   page,
 }, testInfo) => {
@@ -307,5 +345,6 @@ test('board and sidebar timetables show dated tasks and keep deadline times sepa
   await page.screenshot({
     path: testInfo.outputPath('minimal-timetable.png'),
     fullPage: true,
+    animations: 'disabled',
   })
 })

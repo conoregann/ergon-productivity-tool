@@ -1,0 +1,124 @@
+.editor-dialog.sharing-dialog {
+  width: min(520px, calc(100dvw - 32px));
+  padding: 0;
+  border-radius: 8px;
+}
+.sharing-dialog .dialog-header {
+  margin: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.sharing-dialog .dialog-header h2 {
+  font-size: 16px;
+}
+.sharing-content {
+  min-width: 0;
+}
+.sharing-board {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--surface);
+}
+.sharing-board > svg {
+  color: var(--muted);
+}
+.sharing-board > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.sharing-board span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sharing-board strong {
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.sharing-access,
+.sharing-link-section {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+}
+.sharing-content label {
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+}
+.sharing-content select {
+  border-color: var(--line);
+  background: var(--surface);
+}
+.sharing-access-description {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.sharing-access-description svg {
+  margin-top: 2px;
+  width: 14px;
+  height: 14px;
+}
+.sharing-link-section {
+  padding-top: 0;
+}
+.sharing-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sharing-link-row input {
+  min-width: 0;
+  border-color: var(--line);
+  font-size: 12px;
+}
+.sharing-link-row button {
+  flex-shrink: 0;
+}
+.sharing-copy-status {
+  color: var(--muted);
+  font-size: 11px;
+}
+.sharing-note,
+.sharing-feedback {
+  padding: 16px 24px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.sharing-note {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--surface);
+}
+.sharing-feedback.error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  border-left: 0;
+  color: var(--destructive);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .sharing-dialog .dialog-header,
+  .sharing-board,
+  .sharing-access,
+  .sharing-note,
+  .sharing-feedback {
+    padding: 16px;
+  }
+  .sharing-link-section {
+    padding: 0 16px 16px;
+  }
+  .sharing-link-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

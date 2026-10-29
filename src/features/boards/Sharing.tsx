@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Share2 } from 'lucide-react'
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  Globe2,
+  LockKeyhole,
+  Share2,
+} from 'lucide-react'
+import './sharing.css'
 import { Dialog } from '../../app/Dialog'
 import { supabase } from '../../lib/supabase'
 import type { Board } from '../../domain/kanban'
@@ -73,82 +81,130 @@ export function Sharing({
       {open && (
         <Dialog
           title="Share board"
+          className="sharing-dialog"
           busy={pending}
           onClose={() => setOpen(false)}
         >
           <div className="sharing-content">
-            <p>
-              Anyone with the link can access this board. Editors must sign in.
-              You control sharing and board deletion.
-            </p>
+            <div className="sharing-board">
+              <Share2 aria-hidden="true" />
+              <div>
+                <span>Board</span>
+                <strong>{board.title}</strong>
+              </div>
+            </div>
             {query.isPending ? (
-              <p role="status">Loading sharing settings…</p>
+              <p className="sharing-feedback" role="status">
+                Loading sharing settings…
+              </p>
             ) : query.isError ? (
-              <p role="alert">
+              <p className="sharing-feedback error" role="alert">
                 {query.error.message}{' '}
-                <button onClick={() => void query.refetch()}>Try again</button>
+                <button
+                  className="button-secondary"
+                  onClick={() => void query.refetch()}
+                >
+                  Try again
+                </button>
               </p>
             ) : (
               <>
-                <label>
-                  Link access
-                  <select
-                    aria-label="Link access"
-                    value={query.data?.access ?? 'private'}
-                    disabled={pending}
-                    onChange={(event) =>
-                      void save(
-                        event.target.value === 'private'
-                          ? null
-                          : event.target.value,
-                      )
-                    }
+                <section className="sharing-access" aria-label="Board access">
+                  <label>
+                    <span>Link access</span>
+                    <select
+                      aria-label="Link access"
+                      aria-describedby="sharing-access-description"
+                      value={query.data?.access ?? 'private'}
+                      disabled={pending}
+                      onChange={(event) =>
+                        void save(
+                          event.target.value === 'private'
+                            ? null
+                            : event.target.value,
+                        )
+                      }
+                    >
+                      <option value="private">Private</option>
+                      <option value="viewer">
+                        Anyone with the link — viewer
+                      </option>
+                      <option value="editor">
+                        Anyone with the link — editor
+                      </option>
+                    </select>
+                  </label>
+                  <p
+                    id="sharing-access-description"
+                    className="sharing-access-description"
                   >
-                    <option value="private">Private</option>
-                    <option value="viewer">
-                      Anyone with the link — viewer
-                    </option>
-                    <option value="editor">
-                      Anyone with the link — editor
-                    </option>
-                  </select>
-                </label>
+                    {link ? (
+                      <Globe2 aria-hidden="true" />
+                    ) : (
+                      <LockKeyhole aria-hidden="true" />
+                    )}
+                    <span>
+                      {!link
+                        ? 'Only you can access this board. Choose link access to share it.'
+                        : query.data?.access === 'editor'
+                          ? 'People with this link can view the board. Signed-in people can edit tasks.'
+                          : 'Anyone with this link can view the board. Editing is disabled.'}
+                    </span>
+                  </p>
+                </section>
                 {link && (
-                  <>
-                    <label>
-                      Sharing link
+                  <section
+                    className="sharing-link-section"
+                    aria-label="Share a link"
+                  >
+                    <label htmlFor="board-sharing-link">Sharing link</label>
+                    <div className="sharing-link-row">
                       <input
+                        id="board-sharing-link"
                         aria-label="Sharing link"
                         readOnly
                         value={link}
                         onFocus={(event) => event.target.select()}
                       />
-                    </label>
-                    <button
-                      disabled={pending}
-                      onClick={() => {
-                        void navigator.clipboard
-                          .writeText(link)
-                          .then(() => setCopied(true))
-                          .catch(() =>
-                            setError('Select and copy the sharing link above.'),
-                          )
-                      }}
-                    >
-                      {copied ? 'Copied' : 'Copy link'}
-                    </button>
-                  </>
+                      <button
+                        className="button-secondary"
+                        disabled={pending}
+                        onClick={() => {
+                          void navigator.clipboard
+                            .writeText(link)
+                            .then(() => setCopied(true))
+                            .catch(() =>
+                              setError(
+                                'Select and copy the sharing link above.',
+                              ),
+                            )
+                        }}
+                      >
+                        {copied ? (
+                          <Check aria-hidden="true" />
+                        ) : (
+                          <Copy aria-hidden="true" />
+                        )}
+                        {copied ? 'Copied' : 'Copy link'}
+                      </button>
+                    </div>
+                    {copied && (
+                      <p role="status" className="sharing-copy-status">
+                        Link copied.
+                      </p>
+                    )}
+                  </section>
                 )}
-                {!link && (
-                  <p>
-                    This board is private. Disabling sharing invalidates the
-                    previous link.
-                  </p>
-                )}
+                <p className="sharing-note">
+                  {link
+                    ? 'You control sharing and board deletion. Setting access to Private invalidates this link.'
+                    : 'Disabling sharing invalidates the previous link.'}
+                </p>
               </>
             )}
             {error && (
-              <p role="alert" className="error">
+              <p role="alert" className="sharing-feedback error">
+                <AlertCircle aria-hidden="true" />
                 {error}
               </p>
             )}

@@ -2,6 +2,8 @@ Build a lightweight, authenticated application that combines **kanban task manag
 
 The application is hosted on the web, supports desktop and mobile browsers, and is installable as a Progressive Web App (PWA). Data persists centrally and is accessible across devices.
 
+> This document defines the intended scope. The web workflows are implemented, but PWA installation and the unscheduled-task drag-to-calendar flow below remain incomplete. Scheduling currently uses task-selection forms. See the [final review](final-review.md) for verification results and release gaps.
+
 ## Core Scope
 
 | Area           | Capabilities                                                           |

@@ -1016,6 +1016,9 @@ test('keeps snapping suspended throughout column movement and its drop animation
     'none',
   )
   await handle.press('ArrowRight')
+  await expect(page.getByRole('status')).toContainText(
+    'To do moved over In progress.',
+  )
   await page.screenshot({ path: testInfo.outputPath('column-movement.png') })
   await handle.press('Space')
   await expect(page.locator('.kanban-grid > section').first()).toHaveAttribute(
